@@ -97,7 +97,7 @@ if (!isCategory && post) {
   author = post.frontmatter?.author || "0xguava";
   if (typeof post.getHeadings === 'function') {
     const rawHeadings = await post.getHeadings();
-    headings = rawHeadings.filter((h: any) => h.depth >= 2 && h.depth <= 3);
+    headings = rawHeadings.filter((h: any) => h.depth >= 2 && h.depth <= 4);
   }
 }
 ---
@@ -207,14 +207,18 @@ if (!isCategory && post) {
           <div class="toc-sticky">
             <span class="mono text-dim toc-header">Table of Contents</span>
             <nav class="toc-nav">
-              {headings.map((h: any) => (
-                <a 
-                  href={`#${h.slug}`} 
-                  class={`toc-link mono ${h.depth === 3 ? 'toc-sub' : ''}`}
-                >
-                  {h.text}
-                </a>
-              ))}
+              {headings.map((h: any) => {
+                const depthClass = h.depth === 3 ? 'toc-sub' : (h.depth === 4 ? 'toc-h4' : '');
+                return (
+                  <a 
+                    href={`#${h.slug}`} 
+                    class={`toc-link mono ${depthClass}`}
+                    data-heading={h.slug}
+                  >
+                    {h.text}
+                  </a>
+                );
+              })}
             </nav>
           </div>
         </aside>
@@ -222,3 +226,136 @@ if (!isCategory && post) {
     </div>
   </Layout>
 )}
+
+<script>
+  function setupToc() {
+    const headings = Array.from(
+      document.querySelectorAll('.blog-article-content h2, .blog-article-content h3, .blog-article-content h4')
+    ) as HTMLElement[];
+    const tocLinks = Array.from(document.querySelectorAll('.toc-link')) as HTMLAnchorElement[];
+
+    if (!headings.length || !tocLinks.length) return;
+
+    let isManualClick = false;
+    let manualTimeout: any = null;
+    let ticking = false;
+
+    function applyActiveHighlight(activeSlug: string) {
+      if (!activeSlug) return;
+      let activeLink: HTMLAnchorElement | null = null;
+
+      tocLinks.forEach((link) => {
+        const slug = link.getAttribute('data-heading') || link.getAttribute('href')?.replace('#', '');
+        if (slug === activeSlug) {
+          link.classList.add('active');
+          activeLink = link;
+        } else {
+          link.classList.remove('active');
+        }
+      });
+
+      if (activeLink) {
+        const tocContainer = document.querySelector('.toc-sticky');
+        if (tocContainer) {
+          const containerRect = tocContainer.getBoundingClientRect();
+          const linkRect = (activeLink as HTMLAnchorElement).getBoundingClientRect();
+          if (linkRect.top < containerRect.top || linkRect.bottom > containerRect.bottom) {
+            (activeLink as HTMLAnchorElement).scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }
+        }
+      }
+    }
+
+    function calculateActiveHeading() {
+      if (isManualClick) return;
+
+      const triggerOffset = 160;
+      let activeSlug = '';
+
+      // Check if user reached absolute bottom of page
+      const isAtBottom = (window.innerHeight + window.scrollY) >= (document.documentElement.scrollHeight - 25);
+
+      if (isAtBottom) {
+        // Find the lowest heading currently visible in viewport
+        for (let i = headings.length - 1; i >= 0; i--) {
+          if (headings[i].getBoundingClientRect().top < window.innerHeight) {
+            activeSlug = headings[i].id;
+            break;
+          }
+        }
+      } else {
+        // Standard progression: last heading whose top has crossed the triggerOffset
+        for (let i = 0; i < headings.length; i++) {
+          const rect = headings[i].getBoundingClientRect();
+          if (rect.top <= triggerOffset) {
+            activeSlug = headings[i].id;
+          } else {
+            break;
+          }
+        }
+      }
+
+      if (!activeSlug && headings.length > 0) {
+        activeSlug = headings[0].id;
+      }
+
+      applyActiveHighlight(activeSlug);
+      ticking = false;
+    }
+
+    function onScroll() {
+      if (isManualClick) return;
+      if (!ticking) {
+        requestAnimationFrame(calculateActiveHeading);
+        ticking = true;
+      }
+    }
+
+    // 1. Make Article Headings Clickable
+    headings.forEach((h) => {
+      h.addEventListener('click', () => {
+        if (!h.id) return;
+        isManualClick = true;
+        clearTimeout(manualTimeout);
+        history.pushState(null, '', `#${h.id}`);
+        applyActiveHighlight(h.id);
+        h.scrollIntoView({ behavior: 'smooth' });
+        manualTimeout = setTimeout(() => {
+          isManualClick = false;
+        }, 700);
+      });
+    });
+
+    // 2. Clickable TOC links immediately update highlight
+    tocLinks.forEach((link) => {
+      link.addEventListener('click', () => {
+        const slug = link.getAttribute('data-heading') || link.getAttribute('href')?.replace('#', '');
+        if (slug) {
+          isManualClick = true;
+          clearTimeout(manualTimeout);
+          applyActiveHighlight(slug);
+          manualTimeout = setTimeout(() => {
+            isManualClick = false;
+          }, 700);
+        }
+      });
+    });
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    
+    // Initial check (if arriving with hash in URL, or from top)
+    const initialHash = window.location.hash.replace('#', '');
+    if (initialHash && headings.some(h => h.id === initialHash)) {
+      applyActiveHighlight(initialHash);
+    } else {
+      calculateActiveHeading();
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupToc);
+  } else {
+    setupToc();
+  }
+  document.addEventListener('astro:after-swap', setupToc);
+</script>

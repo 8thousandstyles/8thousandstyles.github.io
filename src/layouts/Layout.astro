@@ -41,5 +41,93 @@ const {
         <slot />
       </main>
     </div>
+
+    <script>
+      function setupCodeBlocks() {
+        const preBlocks = Array.from(document.querySelectorAll('pre')) as HTMLPreElement[];
+        preBlocks.forEach((pre) => {
+          if (pre.getAttribute('data-code-processed') === 'true' || pre.closest('.code-block-container')) return;
+          pre.setAttribute('data-code-processed', 'true');
+
+          const container = document.createElement('div');
+          container.className = 'code-block-container';
+
+          let lang = pre.getAttribute('data-language') || '';
+          if (!lang) {
+            const code = pre.querySelector('code');
+            if (code) {
+              const cls = Array.from(code.classList).find(c => c.startsWith('language-'));
+              if (cls) lang = cls.replace('language-', '');
+            }
+          }
+          if (!lang) {
+            const preCls = Array.from(pre.classList).find(c => c.startsWith('language-'));
+            if (preCls) lang = preCls.replace('language-', '');
+          }
+          if (!lang || lang === 'plaintext') lang = 'text';
+
+          const header = document.createElement('div');
+          header.className = 'code-block-header';
+
+          const langSpan = document.createElement('span');
+          langSpan.className = 'code-block-lang mono';
+          langSpan.textContent = lang;
+
+          const copyBtn = document.createElement('button');
+          copyBtn.type = 'button';
+          copyBtn.className = 'copy-code-btn mono';
+          copyBtn.textContent = '[ Copy ]';
+          copyBtn.setAttribute('aria-label', `Copy ${lang} code`);
+
+          let copyTimeout: any = null;
+          copyBtn.addEventListener('click', async () => {
+            const codeElement = pre.querySelector('code');
+            const raw = (codeElement ? (codeElement.innerText || codeElement.textContent) : (pre.innerText || pre.textContent)) || '';
+            const textToCopy = raw.replace(/\r\n/g, '\n').trimEnd();
+
+            try {
+              if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(textToCopy);
+              } else {
+                const textArea = document.createElement('textarea');
+                textArea.value = textToCopy;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                document.execCommand('copy');
+                textArea.remove();
+              }
+
+              copyBtn.textContent = '[ Copied! ]';
+              copyBtn.classList.add('copied');
+              clearTimeout(copyTimeout);
+              copyTimeout = setTimeout(() => {
+                copyBtn.textContent = '[ Copy ]';
+                copyBtn.classList.remove('copied');
+              }, 2000);
+            } catch (err) {
+              console.error('Failed to copy code:', err);
+            }
+          });
+
+          header.appendChild(langSpan);
+          header.appendChild(copyBtn);
+
+          pre.parentNode?.insertBefore(container, pre);
+          container.appendChild(header);
+          container.appendChild(pre);
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupCodeBlocks);
+      } else {
+        setupCodeBlocks();
+      }
+      document.addEventListener('astro:after-swap', setupCodeBlocks);
+    </script>
   </body>
 </html>
