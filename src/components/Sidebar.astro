@@ -1,0 +1,77 @@
+---
+interface Props {
+  currentPath?: string;
+}
+
+const { currentPath = Astro.url.pathname } = Astro.props;
+
+const normalize = (path: string) => {
+  if (path.length > 1 && path.endsWith('/')) return path.slice(0, -1);
+  return path;
+};
+
+const normPath = normalize(currentPath);
+---
+
+<nav class="sidebar">
+  <div>
+    <h2 class="mono" style="font-size: 1.2rem; margin-bottom: 0.5rem;">
+      SYS_ARCHITECT
+    </h2>
+    <p class="text-dim" style="font-size: 0.85rem;">
+      High-Performance Computing<br/>
+      Systems Engineering
+    </p>
+  </div>
+
+  <div class="nav-section">
+    <span class="nav-header">Execution Context</span>
+    <a href="/" class:list={["nav-link", { active: normPath === "" || normPath === "/" }]}>
+      /sys/benchmark (Home)
+    </a>
+    <a href="/projects" class:list={["nav-link", { active: normPath === "/projects" }]}>
+      /bin/projects
+    </a>
+    <a href="/algorithms" class:list={["nav-link", { active: normPath === "/algorithms" }]}>
+      /lib/algorithms
+    </a>
+    <a href="/resume" class:list={["nav-link", { active: normPath === "/resume" }]}>
+      /etc/profile (Resume)
+    </a>
+    <a href="/contact" class:list={["nav-link", { active: normPath === "/contact" }]}>
+      /etc/network
+    </a>
+  </div>
+
+  <div class="nav-section" style="margin-top: auto;">
+    <button id="theme-toggle-btn" style="width: 100%; margin-bottom: 1rem; text-align: left;">
+      [ Toggle Theme ]
+    </button>
+    <span class="nav-header">Network</span>
+    <a href="https://github.com" target="_blank" rel="noreferrer" class="nav-link">GitHub</a>
+    <a href="https://scholar.google.com" target="_blank" rel="noreferrer" class="nav-link">Publications</a>
+  </div>
+</nav>
+
+<script>
+  function setupThemeToggle() {
+    const btn = document.getElementById('theme-toggle-btn');
+    if (!btn) return;
+    
+    function updateBtnText() {
+      const isLight = document.body.classList.contains('light-theme');
+      btn.textContent = `[ Toggle ${isLight ? 'Dark' : 'Light'} Mode ]`;
+    }
+    
+    updateBtnText();
+    
+    btn.addEventListener('click', () => {
+      const isLight = document.body.classList.toggle('light-theme');
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
+      updateBtnText();
+    });
+  }
+
+  setupThemeToggle();
+  document.addEventListener('astro:after-swap', setupThemeToggle);
+</script>

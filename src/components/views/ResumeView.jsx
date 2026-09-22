@@ -29,7 +29,7 @@ const resumeData = {
   "skills": ["C/C++20", "Rust", "CUDA", "MPI", "Linux Kernel", "Assembly"]
 };
 
-const Resume = () => {
+const ResumeView = () => {
   const [view, setView] = useState('raw'); // 'raw' or 'compiled'
 
   return (
@@ -99,4 +99,4 @@ const Resume = () => {
   );
 };
 
-export default Resume;
+export default ResumeView;

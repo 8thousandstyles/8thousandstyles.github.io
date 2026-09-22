@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 
 const NUM_PARTICLES_DEFAULT = 1500;
 
-const Home = () => {
+const HomeView = () => {
   const canvasRef = useRef(null);
   const [mode, setMode] = useState('naive'); // 'naive' or 'optimized'
   const [fps, setFps] = useState(0);
@@ -10,7 +10,9 @@ const Home = () => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     let animationFrameId;
     let lastTime = performance.now();
     let frameCount = 0;
@@ -60,7 +62,7 @@ const Home = () => {
           }
         }
       } else {
-        // O(N) Spatial Grid Optimization (approximated for demo)
+        // O(N) Spatial Grid Optimization
         const gridSize = 10;
         const grid = new Map();
         
@@ -78,7 +80,6 @@ const Home = () => {
           let gx = Math.floor(p1.x / gridSize);
           let gy = Math.floor(p1.y / gridSize);
           
-          // Only check adjacent cells
           for (let dx = -1; dx <= 1; dx++) {
             for (let dy = -1; dy <= 1; dy++) {
               let cell = grid.get(`${gx + dx},${gy + dy}`);
@@ -184,4 +185,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default HomeView;

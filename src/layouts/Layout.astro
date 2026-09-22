@@ -1,0 +1,45 @@
+---
+import '../index.css';
+import Sidebar from '../components/Sidebar.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "SYS_ARCHITECT | Systems, HPC & Theory",
+  description = "High-Performance Computing and Systems Architecture Portfolio"
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+    <!-- Instant theme initialization to prevent flash -->
+    <script is:inline>
+      const savedTheme = typeof localStorage !== 'undefined' ? (localStorage.getItem('theme') || 'dark') : 'dark';
+      if (savedTheme === 'light') {
+        document.documentElement.classList.add('light-theme');
+      }
+    </script>
+  </head>
+  <body>
+    <script is:inline>
+      if (typeof localStorage !== 'undefined' && localStorage.getItem('theme') === 'light') {
+        document.body.classList.add('light-theme');
+      }
+    </script>
+    <div class="app-container">
+      <Sidebar />
+      <main class="main-content">
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>

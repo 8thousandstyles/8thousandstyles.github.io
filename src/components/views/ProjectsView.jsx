@@ -11,11 +11,10 @@ const AllocatorVisualizer = () => {
       interval = setInterval(() => {
         setMemory(prev => {
           let newMem = [...prev];
-          let action = Math.random() > 0.4 ? 'allocate' : 'free'; // bias towards allocate initially
+          let action = Math.random() > 0.4 ? 'allocate' : 'free';
           
           if (action === 'allocate') {
             if (mode === 'naive') {
-              // Naive: Find random contiguous blocks (simulating fragmentation)
               let size = Math.floor(Math.random() * 5) + 1;
               let startIdx = -1;
               for (let i = 0; i <= newMem.length - size; i++) {
@@ -23,25 +22,23 @@ const AllocatorVisualizer = () => {
                 for (let j = 0; j < size; j++) {
                   if (newMem[i+j] !== null) { canFit = false; break; }
                 }
-                if (canFit && Math.random() > 0.5) { startIdx = i; break; } // Pick somewhat randomly
-                if (canFit && startIdx === -1) startIdx = i; // Fallback to first fit
+                if (canFit && Math.random() > 0.5) { startIdx = i; break; }
+                if (canFit && startIdx === -1) startIdx = i;
               }
               if (startIdx !== -1) {
                 for(let i=0; i<size; i++) newMem[startIdx+i] = 'allocated';
                 setStats(s => ({ ...s, allocations: s.allocations + 1 }));
               }
             } else if (mode === 'slab') {
-              // Slab: O(1) allocation in fixed-size caches. Perfectly packed.
               for (let i = 0; i < newMem.length; i++) {
                 if (newMem[i] === null) {
                   newMem[i] = 'allocated';
                   setStats(s => ({ ...s, allocations: s.allocations + 1 }));
-                  break; // Just allocate one block (simulating fixed size object)
+                  break;
                 }
               }
             }
           } else {
-            // Free random block
             let allocatedIndexes = [];
             newMem.forEach((val, idx) => { if(val !== null) allocatedIndexes.push(idx); });
             if (allocatedIndexes.length > 0) {
@@ -51,7 +48,6 @@ const AllocatorVisualizer = () => {
             }
           }
           
-          // Calculate fragmentation (isolated free blocks)
           let fragCount = 0;
           let inFreeBlock = false;
           let totalFree = 0;
@@ -110,7 +106,6 @@ const AllocatorVisualizer = () => {
   );
 };
 
-
 const projects = [
   {
     id: 'lock-manager',
@@ -126,7 +121,7 @@ const projects = [
   }
 ];
 
-const Projects = () => {
+const ProjectsView = () => {
   return (
     <div>
       <h1 className="mono">/bin/projects</h1>
@@ -161,4 +156,4 @@ const Projects = () => {
   );
 };
 
-export default Projects;
+export default ProjectsView;

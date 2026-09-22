@@ -38,6 +38,7 @@ const ComplexityMap = () => {
     const c = canvasRef.current;
     if (!c || !containerRef.current) return;
     const ctx = c.getContext('2d');
+    if (!ctx) return;
     let id;
     const dpr = window.devicePixelRatio || 1;
 
@@ -74,7 +75,7 @@ const ComplexityMap = () => {
         if (isHov) {
             ctx.fillStyle = 'rgba(255,255,255,0.1)';
         }
-        roundRect(rx, ry, rw, rh, 0); // Brutalist sharp corners
+        roundRect(rx, ry, rw, rh, 0);
         ctx.fill();
 
         ctx.strokeStyle = r.color; 
@@ -160,7 +161,7 @@ const ComplexityMap = () => {
   );
 };
 
-const Algorithms = () => {
+const AlgorithmsView = () => {
   return (
     <div>
       <h1 className="mono">/lib/algorithms</h1>
@@ -211,4 +212,4 @@ void discharge(int u) {
   );
 };
 
-export default Algorithms;
+export default AlgorithmsView;

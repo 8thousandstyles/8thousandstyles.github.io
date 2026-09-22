@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const Contact = () => {
+const ContactView = () => {
   const [status, setStatus] = useState('idle');
 
   const handleSubmit = (e) => {
@@ -77,4 +77,4 @@ const Contact = () => {
   );
 };
 
-export default Contact;
+export default ContactView;
