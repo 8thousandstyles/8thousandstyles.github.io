@@ -22,4 +22,5 @@ links:
     url: "https://github.com"
   - title: "Publications"
     url: "https://scholar.google.com"
+copyright: "© 2026 0xguava"
 ---

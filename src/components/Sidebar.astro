@@ -73,6 +73,9 @@ const linksItems = rawLinks.map((item: any) => ({
   target: item.target ?? "_blank",
   rel: item.rel ?? "noreferrer"
 }));
+
+// 5. Copyright Line
+const copyright = data.copyright ?? `© ${new Date().getFullYear()} 0xguava`;
 ---
 
 <nav class="sidebar">
@@ -124,6 +127,11 @@ const linksItems = rawLinks.map((item: any) => ({
           </a>
         ))}
       </>
+    )}
+    {copyright && (
+      <div class="sidebar-copyright mono text-dim" style="font-size: 0.72rem; margin-top: 1.5rem; opacity: 0.6;">
+        {copyright}
+      </div>
     )}
   </div>
 </nav>
