@@ -10,6 +10,14 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
+body.light-theme {
+  --bg: #ffffff;
+  --fg: #000000;
+  --fg-dim: #666666;
+  --border: #dddddd;
+  --accent: #d81b43;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -22,6 +30,7 @@ body {
   font-family: var(--font-sans);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 a {
@@ -60,6 +69,8 @@ h1, h2, h3, h4 {
   position: fixed;
   height: 100vh;
   overflow-y: auto;
+  background-color: var(--bg);
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
 .main-content {
@@ -136,12 +147,13 @@ h1, h2, h3, h4 {
   position: absolute;
   top: 1rem;
   left: 1rem;
-  background: rgba(0, 0, 0, 0.8);
+  background: var(--bg);
   border: 1px solid var(--border);
   padding: 1rem;
   font-family: var(--font-mono);
   font-size: 0.85rem;
   z-index: 10;
+  opacity: 0.9;
 }
 
 button {
@@ -155,7 +167,12 @@ button {
   transition: all 0.2s;
 }
 
-button:hover {
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button:not(:disabled):hover {
   background: var(--fg);
   color: var(--bg);
 }
@@ -163,7 +180,7 @@ button:hover {
 button.active {
   background: var(--accent);
   border-color: var(--accent);
-  color: var(--bg);
+  color: #fff;
 }
 
 /* Utilities */
