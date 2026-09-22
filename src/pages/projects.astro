@@ -1,8 +1,116 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import ProjectsView from '../components/views/ProjectsView.jsx';
+
+interface ProjectFrontmatter {
+  title?: string;
+  name?: string;
+  spec?: string;
+  order?: number;
+  draft?: boolean;
+  github?: string;
+  demo?: string;
+  link?: string;
+  blog?: string;
+  tags?: string[];
+}
+
+const rawProjects = import.meta.glob<any>('../content/projects/*.md', { eager: true });
+const projectFiles = Object.values(rawProjects).filter(
+  (project) => !project.frontmatter?.draft
+);
+
+// Sort by order ascending (defaulting to 999 if unspecified)
+projectFiles.sort((a, b) => {
+  const orderA = a.frontmatter.order ?? 999;
+  const orderB = b.frontmatter.order ?? 999;
+  return orderA - orderB;
+});
+
+const resolveBlogUrl = (blog?: string) => {
+  if (!blog) return null;
+  if (blog.startsWith('http://') || blog.startsWith('https://') || blog.startsWith('/')) {
+    return blog;
+  }
+  const cleanSlug = blog.replace(/^\.?\/?(src\/content\/blog\/)?/, '').replace(/\.md$/, '');
+  return `/blog/${cleanSlug}`;
+};
 ---
 
-<Layout title="SYS_ARCHITECT | /bin/projects">
-  <ProjectsView />
+<Layout title="SYS_ARCHITECT | Projects">
+  <div>
+    <h1 class="mono">Projects</h1>
+    <p class="text-dim mb-4">
+      A selection of high-performance architectural implementations. 
+      Focus is placed on deterministic execution, memory layout, and raw throughput.
+    </p>
+
+    <div class="flex" style="flex-direction: column; gap: 2rem;">
+      {projectFiles.map((project) => {
+        const { title, name, spec, github, demo, link, blog, tags } = project.frontmatter;
+        const projectTitle = title || name || "Untitled Project";
+        const Content = project.Content;
+        const liveDemoUrl = demo || link;
+        const blogUrl = resolveBlogUrl(blog);
+        const hasFooter = github || liveDemoUrl || blogUrl;
+        const hasTags = tags && tags.length > 0;
+
+        return (
+          <div class="card">
+            <div class="flex" style="justify-content: space-between; align-items: baseline; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+              <h2 class="mono" style="font-size: 1.2rem; margin: 0;">
+                {blogUrl ? (
+                  <a href={blogUrl} class="project-title-link">
+                    {projectTitle}
+                  </a>
+                ) : (
+                  projectTitle
+                )}
+              </h2>
+              {spec && <span class="badge">{spec}</span>}
+            </div>
+
+            <div class="project-content text-dim">
+              <Content />
+            </div>
+
+            {hasTags && (
+              <div class="flex mono" style="gap: 0.75rem; font-size: 0.75rem; margin-top: 1.25rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                {tags.map((t: string) => {
+                  const tagText = t.startsWith('#') ? t : `#${t}`;
+                  return (
+                    <span style="color: var(--fg-dim); opacity: 0.8;">
+                      {tagText}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
+            {hasFooter && (
+              <div 
+                class="flex gap-2 mono" 
+                style={`font-size: 0.8rem; border-top: 1px solid var(--border); padding-top: 0.75rem; flex-wrap: wrap; align-items: center; ${!hasTags ? 'margin-top: 1.25rem;' : ''}`}
+              >
+                {github && (
+                  <a href={github} target="_blank" rel="noreferrer" class="badge tag-link">
+                    GitHub ↗
+                  </a>
+                )}
+                {liveDemoUrl && (
+                  <a href={liveDemoUrl} target="_blank" rel="noreferrer" class="badge tag-link">
+                    Live Demo ↗
+                  </a>
+                )}
+                {blogUrl && (
+                  <a href={blogUrl} class="badge tag-link">
+                    Blog ↗
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  </div>
 </Layout>

@@ -193,3 +193,65 @@ button.active {
 .gap-2 { gap: 0.5rem; }
 .gap-4 { gap: 1rem; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+
+/* Markdown Content Styling */
+.project-content p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.project-content p + p {
+  margin-top: 0.75rem;
+}
+
+.project-content ul, .project-content ol {
+  margin-left: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.project-content li {
+  margin-bottom: 0.25rem;
+}
+
+.project-content code {
+  font-family: var(--font-mono);
+  background: #181818;
+  padding: 0.15rem 0.4rem;
+  border-radius: 2px;
+  font-size: 0.85em;
+  border: 1px solid var(--border);
+}
+
+body.light-theme .project-content code {
+  background: #f3f3f3;
+}
+
+.project-content pre {
+  background: #111;
+  border: 1px solid var(--border);
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  overflow-x: auto;
+}
+
+.tag-link {
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-decoration: none !important;
+}
+
+.tag-link:hover {
+  color: var(--fg);
+  border-color: var(--accent);
+}
+
+.project-title-link {
+  color: var(--fg);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.project-title-link:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
