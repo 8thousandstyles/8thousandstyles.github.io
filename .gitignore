@@ -42,3 +42,6 @@ logs
 .eslintcache
 
 *-lock.json
+
+# uncompiled source backups
+src/pages/index.astro.bak

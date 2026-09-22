@@ -478,6 +478,194 @@ export const ComplexityMap = () => {
 
 ---
 
+## Landing Page Media & Decryption Archive (Human-Readable Source)
+
+Because the production `src/pages/index.astro` contains minified, string-encrypted, and mangled hexadecimal code for anti-inspection purposes, the clean human-readable source code is preserved below for development, customization, and future reference.
+
+### Clean Source: `src/pages/index.astro`
+
+```astro
+---
+// Landing Page: Fullscreen looping video with Enter/Space key navigation to /home
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>SYS_ARCHITECT</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: #000000;
+        cursor: default;
+        font-family: 'JetBrains Mono', monospace;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .landing-media {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #000000;
+      }
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        pointer-events: none;
+      }
+      /* Ensure media controls remain completely hidden */
+      video::-webkit-media-controls,
+      video::-webkit-media-controls-enclosure,
+      video::-webkit-media-controls-panel {
+        display: none !important;
+        -webkit-appearance: none !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+    </style>
+  </head>
+  <body oncontextmenu="return false;">
+    <div id="landing-viewport" class="landing-media">
+      <video
+        id="bg-video"
+        autoplay
+        loop
+        muted
+        playsinline
+        disablepictureinpicture
+        disableremoteplayback
+        controlslist="nodownload nofullscreen noremoteplayback noplaybackrate"
+        tabindex="-1"
+        aria-hidden="true"
+        oncontextmenu="return false;"
+      ></video>
+    </div>
+
+    <script>
+      // Disable right-click context menu
+      window.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+      });
+
+      // Guard against inspect shortcuts on landing page
+      window.addEventListener('keydown', (event) => {
+        if (
+          event.key === 'F12' ||
+          ((event.ctrlKey || event.metaKey) &&
+            ((event.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(event.key)) ||
+             ['u', 'U'].includes(event.key)))
+        ) {
+          event.preventDefault();
+        }
+      });
+
+      // Stream obscured video from in-memory decrypted buffer
+      (async function loadObscuredMedia() {
+        try {
+          const video = document.getElementById('bg-video');
+          if (!video) return;
+
+          const res = await fetch('/assets/matrix_cache.bin');
+          if (!res.ok) return;
+
+          const buffer = await res.arrayBuffer();
+          const u8 = new Uint8Array(buffer);
+          const u32 = new Uint32Array(buffer, 0, Math.floor(u8.length / 4));
+          const KEY_32 = 0x5a5a5a5a;
+          const KEY_8 = 0x5a;
+
+          for (let i = 0; i < u32.length; i++) {
+            u32[i] ^= KEY_32;
+          }
+          for (let i = u32.length * 4; i < u8.length; i++) {
+            u8[i] ^= KEY_8;
+          }
+
+          const blob = new Blob([u8], { type: 'video/webm' });
+          const streamUrl = URL.createObjectURL(blob);
+          video.src = streamUrl;
+
+          // Revoke immediately once loaded to invalidate in-memory reference from DevTools inspection
+          video.addEventListener('loadeddata', () => {
+            URL.revokeObjectURL(streamUrl);
+          }, { once: true });
+
+          video.play().catch(() => {});
+        } catch (_) {}
+      })();
+
+      function proceedToHome() {
+        window.location.href = '/home';
+      }
+
+      // Keyboard navigation: Enter or Space key only (Desktop)
+      window.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ' || event.code === 'Space') {
+          event.preventDefault();
+          proceedToHome();
+        }
+      });
+
+      // Mobile Touch Gesture: Swipe Up only
+      // Only active on actual touch devices; ignored on PC mouse interactions
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+      if (isTouchDevice) {
+        let touchStartY = 0;
+        let touchStartX = 0;
+
+        window.addEventListener('touchstart', (event) => {
+          touchStartY = event.touches[0].clientY;
+          touchStartX = event.touches[0].clientX;
+        }, { passive: true });
+
+        window.addEventListener('touchend', (event) => {
+          const touchEndY = event.changedTouches[0].clientY;
+          const touchEndX = event.changedTouches[0].clientX;
+
+          const deltaY = touchStartY - touchEndY; // positive when swiping upwards
+          const deltaX = Math.abs(touchStartX - touchEndX);
+
+          // Threshold: at least 45px upward and predominantly vertical
+          if (deltaY > 45 && deltaY > deltaX) {
+            proceedToHome();
+          }
+        }, { passive: true });
+      }
+    </script>
+  </body>
+</html>
+```
+
+### Video Pipeline & Re-Obfuscation Workflow
+
+1. **Source Videos**: Place raw `.webm` videos in `raw_media/` (e.g. `raw_media/1.webm`).
+2. **Obfuscation Script**: Run `npm run obfuscate` (or `node scripts/obfuscate.js`). It scrambles the video into `public/assets/matrix_cache.bin`.
+3. **If Modifying the Landing Script**:
+   - Make edits to the human-readable script in this section or in `src/pages/index.source.astro`.
+   - Run the obfuscator CLI to update `src/pages/index.astro`:
+     ```bash
+     npx javascript-obfuscator temp_script.js --compact true --control-flow-flattening true --numbers-to-expressions true --string-array true --string-array-encoding base64 --string-array-threshold 1 --identifier-names-generator hexadecimal
+     ```
+
+---
+
 ## Development Commands
 
 ```bash
