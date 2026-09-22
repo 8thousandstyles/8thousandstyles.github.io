@@ -32,8 +32,8 @@ const normPath = normalize(currentPath);
     <a href="/projects" class:list={["nav-link", { active: normPath === "/projects" }]}>
       Projects
     </a>
-    <a href="/algorithms" class:list={["nav-link", { active: normPath === "/algorithms" }]}>
-      Algorithms
+    <a href="/notes" class:list={["nav-link", { active: normPath === "/notes" || normPath.startsWith("/notes/") }]}>
+      Notes
     </a>
     <a href="/resume" class:list={["nav-link", { active: normPath === "/resume" }]}>
       Resume

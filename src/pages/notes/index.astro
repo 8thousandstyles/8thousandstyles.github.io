@@ -1,0 +1,91 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+interface NoteFrontmatter {
+  title?: string;
+  date?: string;
+  spec?: string;
+  description?: string;
+  tags?: string[];
+  draft?: boolean;
+}
+
+const rawNotes = import.meta.glob<any>('../../content/notes/**/*.md', { eager: true });
+
+// Group notes by category subfolder
+const categoriesMap = new Map<string, { count: number; posts: any[] }>();
+
+const categoryDescriptions: Record<string, string> = {
+  blogs: "Long-form writeups, architectural deep dives, and systems case studies.",
+  algorithms: "Computational complexity, graph theory, and applied cryptographic primitives.",
+};
+
+const formatCategoryName = (cat: string) => {
+  if (cat.toLowerCase() === 'blogs') return 'Blogs';
+  if (cat.toLowerCase() === 'algorithms') return 'Algorithms';
+  return cat.charAt(0).toUpperCase() + cat.slice(1);
+};
+
+for (const [filepath, post] of Object.entries(rawNotes)) {
+  if (post.frontmatter?.draft) continue;
+  
+  // Extract category from path: ../../content/notes/category/name.md
+  const relPath = filepath.replace(/^.*\/content\/notes\//, '').replace(/\.md$/, '');
+  const parts = relPath.split('/');
+  const category = parts[0];
+
+  if (!categoriesMap.has(category)) {
+    categoriesMap.set(category, { count: 0, posts: [] });
+  }
+
+  const catData = categoriesMap.get(category)!;
+  catData.count += 1;
+  catData.posts.push({
+    slugPath: relPath,
+    ...post
+  });
+}
+
+const categories = Array.from(categoriesMap.entries()).map(([key, data]) => ({
+  key,
+  name: formatCategoryName(key),
+  description: categoryDescriptions[key] || `${formatCategoryName(key)} notes and technical writeups.`,
+  count: data.count,
+  posts: data.posts
+}));
+---
+
+<Layout title="SYS_ARCHITECT | Notes">
+  <div>
+    <h1 class="mono">Notes</h1>
+    <p class="text-dim mb-4">
+      Knowledge repository organized by domain: deep dives, algorithms, and architectural essays.
+    </p>
+
+    <!-- Categories Grid -->
+    <div class="flex" style="flex-direction: column; gap: 1.5rem; margin-bottom: 3rem;">
+      {categories.map((cat) => (
+        <a href={`/notes/${cat.key}`} class="card" style="text-decoration: none; display: block; transition: border-color 0.2s;">
+          <div class="flex" style="justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem;">
+            <div class="flex" style="align-items: center; gap: 0.75rem;">
+              <h2 class="mono" style="font-size: 1.25rem; margin: 0; color: var(--fg);">
+                /{cat.key} <span style="font-weight: normal; font-size: 1rem; color: var(--fg-dim);">({cat.name})</span>
+              </h2>
+            </div>
+            <span class="badge">
+              {cat.count} {cat.count === 1 ? 'ENTRY' : 'ENTRIES'}
+            </span>
+          </div>
+
+          <p class="text-dim mb-2" style="font-size: 0.9rem; margin-bottom: 0.75rem;">
+            {cat.description}
+          </p>
+
+          <div class="mono text-dim" style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="color: var(--accent);">Browse Category →</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+</Layout>

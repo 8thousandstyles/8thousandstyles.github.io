@@ -1,0 +1,163 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+export async function getStaticPaths() {
+  const rawNotes = import.meta.glob<any>('../../content/notes/**/*.md', { eager: true });
+  
+  const articles: { slugPath: string; category: string; post: any }[] = [];
+  const categoriesMap = new Map<string, any[]>();
+
+  for (const [filepath, post] of Object.entries(rawNotes)) {
+    if (post.frontmatter?.draft) continue;
+
+    // filepath example: ../../content/notes/blogs/allocator.md -> blogs/allocator
+    const slugPath = filepath.replace(/^.*\/content\/notes\//, '').replace(/\.md$/, '');
+    const parts = slugPath.split('/');
+    const category = parts[0];
+
+    articles.push({ slugPath, category, post });
+
+    if (!categoriesMap.has(category)) {
+      categoriesMap.set(category, []);
+    }
+    categoriesMap.get(category)!.push({
+      slugPath,
+      ...post
+    });
+  }
+
+  // 1. Category paths: /notes/:category (e.g. /notes/blogs, /notes/algorithms)
+  const categoryPaths = Array.from(categoriesMap.entries()).map(([category, posts]) => ({
+    params: { slug: category },
+    props: {
+      isCategory: true,
+      category,
+      posts
+    }
+  }));
+
+  // 2. Article paths: /notes/:category/:slug (e.g. /notes/blogs/allocator)
+  const articlePaths = articles.map(({ slugPath, category, post }) => ({
+    params: { slug: slugPath },
+    props: {
+      isCategory: false,
+      category,
+      post
+    }
+  }));
+
+  return [...categoryPaths, ...articlePaths];
+}
+
+const formatCategoryName = (cat: string) => {
+  if (cat.toLowerCase() === 'blogs') return 'Blogs';
+  if (cat.toLowerCase() === 'algorithms') return 'Algorithms';
+  return cat.charAt(0).toUpperCase() + cat.slice(1);
+};
+
+const categoryDescriptions: Record<string, string> = {
+  blogs: "Long-form writeups, architectural deep dives, and systems case studies.",
+  algorithms: "Computational complexity, graph theory, and applied cryptographic primitives.",
+};
+
+const { isCategory, category, posts, post } = Astro.props;
+const categoryDisplayName = formatCategoryName(category);
+---
+
+{isCategory ? (
+  <Layout title={`Notes // ${categoryDisplayName} | SYS_ARCHITECT`}>
+    <div>
+      <a href="/notes" class="mono text-dim" style="font-size: 0.85rem; display: inline-block; margin-bottom: 2rem;">
+        ← /notes (All Categories)
+      </a>
+
+      <div class="flex" style="justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+        <h1 class="mono" style="margin: 0;">/{category}</h1>
+        <span class="badge">{posts.length} {posts.length === 1 ? 'NOTE' : 'NOTES'}</span>
+      </div>
+
+      <p class="text-dim mb-4">
+        {categoryDescriptions[category] || `Technical notes and entries under ${categoryDisplayName}.`}
+      </p>
+
+      <div class="flex" style="flex-direction: column; gap: 2rem;">
+        {posts.map((entry: any) => {
+          const { title, date, spec, description, tags } = entry.frontmatter;
+          const articleUrl = `/notes/${entry.slugPath}`;
+
+          return (
+            <div class="card">
+              <div class="flex" style="justify-content: space-between; align-items: baseline; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                <h2 class="mono" style="font-size: 1.2rem; margin: 0;">
+                  <a href={articleUrl} class="project-title-link">
+                    {title || "Untitled Entry"}
+                  </a>
+                </h2>
+                <div class="flex gap-2" style="align-items: center;">
+                  {date && <span class="mono text-dim" style="font-size: 0.8rem;">{date}</span>}
+                  {spec && <span class="badge">{spec}</span>}
+                </div>
+              </div>
+
+              {description && (
+                <p class="text-dim" style="font-size: 0.95rem; margin-bottom: 0.75rem; line-height: 1.5;">
+                  {description}
+                </p>
+              )}
+
+              {tags && tags.length > 0 && (
+                <div class="flex mono" style="gap: 0.75rem; font-size: 0.75rem; margin-top: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                  {tags.map((t: string) => {
+                    const tagText = t.startsWith('#') ? t : `#${t}`;
+                    return (
+                      <span style="color: var(--fg-dim); opacity: 0.8;">
+                        {tagText}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div class="mono" style="border-top: 1px solid var(--border); padding-top: 0.75rem; margin-top: 1rem; font-size: 0.8rem;">
+                <a href={articleUrl} class="tag-link badge">
+                  Read Article →
+                </a>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </Layout>
+) : (
+  <Layout title={`${post.frontmatter?.title || 'Note'} | SYS_ARCHITECT`}>
+    <div style="max-width: 800px;">
+      <a href={`/notes/${category}`} class="mono text-dim" style="font-size: 0.85rem; display: inline-block; margin-bottom: 2rem;">
+        ← /notes/{category} ({categoryDisplayName})
+      </a>
+
+      <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem;">
+        <h1 class="mono" style="font-size: 1.8rem; margin-bottom: 0.75rem;">
+          {post.frontmatter?.title || "Untitled Note"}
+        </h1>
+        <div class="flex gap-4 mono text-dim" style="font-size: 0.8rem; align-items: center; flex-wrap: wrap;">
+          {post.frontmatter?.date && <span>DATE: {post.frontmatter.date}</span>}
+          {post.frontmatter?.spec && <span class="badge">{post.frontmatter.spec}</span>}
+        </div>
+        {post.frontmatter?.tags && post.frontmatter.tags.length > 0 && (
+          <div class="flex mono" style="gap: 0.75rem; font-size: 0.75rem; margin-top: 0.75rem; flex-wrap: wrap;">
+            {post.frontmatter.tags.map((t: string) => (
+              <span style="color: var(--fg-dim); opacity: 0.8;">
+                {t.startsWith('#') ? t : `#${t}`}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div class="blog-article-content text-dim">
+        <post.Content />
+      </div>
+    </div>
+  </Layout>
+)}

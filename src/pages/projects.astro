@@ -31,8 +31,11 @@ const resolveBlogUrl = (blog?: string) => {
   if (blog.startsWith('http://') || blog.startsWith('https://') || blog.startsWith('/')) {
     return blog;
   }
-  const cleanSlug = blog.replace(/^\.?\/?(src\/content\/blog\/)?/, '').replace(/\.md$/, '');
-  return `/blog/${cleanSlug}`;
+  const cleanSlug = blog.replace(/^\.?\/?(src\/content\/(notes\/|blog\/)?)?/, '').replace(/\.md$/, '');
+  if (cleanSlug.includes('/')) {
+    return `/notes/${cleanSlug}`;
+  }
+  return `/notes/blogs/${cleanSlug}`;
 };
 ---
 
