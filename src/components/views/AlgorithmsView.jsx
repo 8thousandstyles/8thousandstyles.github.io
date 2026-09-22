@@ -1,175 +1,83 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React from 'react';
 
-const ComplexityMap = () => {
-  const canvasRef = useRef(null);
-  const containerRef = useRef(null);
-  const [hovered, setHovered] = useState(null);
-  const [tooltip, setTooltip] = useState(null);
-
-  // Brutalist Palette
-  const colors = {
-    exptime: '#ff3366', // accent red
-    pspace: '#555555',  // dim gray
-    np: '#ffffff',      // stark white
-    conp: '#888888',    // medium gray
-    p: '#ffffff',       // stark white
-    bgAlpha: 'rgba(255,255,255,0.05)'
-  };
-
-  const regions = [
-    { id: 'exptime', label: 'EXPTIME', x: 0.02, y: 0.06, w: 0.96, h: 0.88, color: colors.exptime, desc: 'Decidable in O(2^p(n)) time' },
-    { id: 'pspace', label: 'PSPACE', x: 0.07, y: 0.13, w: 0.80, h: 0.74, color: colors.pspace, desc: 'Decidable in poly(n) space' },
-    { id: 'np', label: 'NP', x: 0.12, y: 0.20, w: 0.48, h: 0.56, color: colors.np, desc: 'Verifiable in poly(n) time' },
-    { id: 'conp', label: 'co-NP', x: 0.40, y: 0.20, w: 0.40, h: 0.48, color: colors.conp, desc: 'Complements of NP problems' },
-    { id: 'p', label: 'P', x: 0.17, y: 0.30, w: 0.30, h: 0.34, color: colors.p, desc: 'Decidable in poly(n) time' },
-  ];
-
-  const problems = [
-    { name: 'Sorting', x: 0.24, y: 0.42, region: 'p', note: 'O(n log n) optimal' },
-    { name: 'Max Flow', x: 0.26, y: 0.54, region: 'p', note: 'O(V²E)' },
-    { name: 'SAT', x: 0.19, y: 0.27, region: 'np', note: 'NP-Complete' },
-    { name: 'TSP', x: 0.15, y: 0.44, region: 'np', note: 'NP-Complete' },
-    { name: 'TAUT', x: 0.55, y: 0.30, region: 'conp', note: 'co-NP-Complete' },
-    { name: 'Go', x: 0.74, y: 0.28, region: 'pspace', note: 'PSPACE-Complete' },
-    { name: 'Chess', x: 0.10, y: 0.10, region: 'exptime', note: 'EXPTIME-Complete' },
-  ];
-
-  useEffect(() => {
-    const c = canvasRef.current;
-    if (!c || !containerRef.current) return;
-    const ctx = c.getContext('2d');
-    if (!ctx) return;
-    let id;
-    const dpr = window.devicePixelRatio || 1;
-
-    const resize = () => {
-      const rect = containerRef.current.getBoundingClientRect();
-      c.width = rect.width * dpr;
-      c.height = rect.height * dpr;
-      c.style.width = rect.width + 'px';
-      c.style.height = rect.height + 'px';
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
-    const roundRect = (x, y, w, h, r) => {
-      ctx.beginPath();
-      ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-    };
-
-    const draw = () => {
-      const cw = c.width / dpr, ch = c.height / dpr;
-      ctx.clearRect(0, 0, cw, ch);
-
-      // Draw regions
-      regions.forEach((r) => {
-        const rx = r.x * cw, ry = r.y * ch, rw = r.w * cw, rh = r.h * ch;
-        const isHov = hovered === r.id;
-        
-        ctx.fillStyle = colors.bgAlpha; 
-        if (isHov) {
-            ctx.fillStyle = 'rgba(255,255,255,0.1)';
-        }
-        roundRect(rx, ry, rw, rh, 0);
-        ctx.fill();
-
-        ctx.strokeStyle = r.color; 
-        ctx.lineWidth = isHov ? 2 : 1;
-        roundRect(rx, ry, rw, rh, 0); 
-        ctx.stroke();
-
-        const lx = r.id === 'conp' ? rx + rw - 14 : rx + 14;
-        const ly = r.id === 'conp' ? ry + 22 : ry + 22;
-        ctx.font = '600 12px "JetBrains Mono", monospace';
-        ctx.fillStyle = r.color;
-        ctx.textAlign = r.id === 'conp' ? 'right' : 'left';
-        ctx.fillText(r.label, lx, ly);
-        ctx.textAlign = 'left';
-      });
-
-      // Draw problems
-      problems.forEach(p => {
-        const regionObj = regions.find(r => r.id === p.region);
-        const px = p.x * cw, py = p.y * ch;
-        const isHov = hovered === 'prob_' + p.name;
-        const rad = isHov ? 5 : 3;
-
-        ctx.fillStyle = isHov ? colors.exptime : regionObj.color;
-        ctx.beginPath(); 
-        ctx.arc(px, py, rad, 0, Math.PI * 2); 
-        ctx.fill();
-
-        ctx.font = '400 11px "JetBrains Mono", monospace';
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(p.name, px + rad + 6, py + 4);
-      });
-
-      // "?" in NP ∩ co-NP
-      const qx = 0.47 * cw, qy = 0.40 * ch;
-      ctx.font = '700 28px "Inter", sans-serif'; ctx.fillStyle = colors.conp;
-      ctx.textAlign = 'center'; ctx.fillText('?', qx, qy); ctx.textAlign = 'left';
-
-      id = requestAnimationFrame(draw);
-    };
-    id = requestAnimationFrame(draw);
-    return () => { cancelAnimationFrame(id); window.removeEventListener('resize', resize); };
-  }, [hovered]);
-
-  const handleMouse = useCallback((e) => {
-    const c = canvasRef.current; if (!c) return;
-    const rect = c.getBoundingClientRect();
-    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-    const cw = rect.width, ch = rect.height;
-    let found = null;
-
-    for (const p of problems) {
-      const px = p.x * cw, py = p.y * ch;
-      if (Math.hypot(mx - px, my - py) < 15) {
-        found = 'prob_' + p.name;
-        setTooltip({ x: e.clientX - rect.left + 15, y: e.clientY - rect.top - 10, name: p.name, note: p.note });
-        break;
-      }
-    }
-    if (!found) {
-      for (let i = regions.length - 1; i >= 0; i--) {
-        const r = regions[i];
-        const rx = r.x * cw, ry = r.y * ch, rw = r.w * cw, rh = r.h * ch;
-        if (mx >= rx && mx <= rx + rw && my >= ry && my <= ry + rh) { found = r.id; break; }
-      }
-    }
-    if (!found) setTooltip(null);
-    setHovered(found);
-  }, []);
-
-  const handleLeave = useCallback(() => { setHovered(null); setTooltip(null); }, []);
-
-  return (
-    <div ref={containerRef} style={{ position: 'relative', border: '1px solid var(--border)', aspectRatio: '16/9', marginBottom: '3rem', background: 'var(--bg)' }}>
-      <canvas ref={canvasRef} onMouseMove={handleMouse} onMouseLeave={handleLeave} style={{ width: '100%', height: '100%', cursor: 'crosshair', display: 'block' }} />
-      {tooltip && (
-        <div style={{ position: 'absolute', left: tooltip.x, top: tooltip.y, background: '#111', border: '1px solid var(--border)', padding: '0.5rem', zIndex: 10, pointerEvents: 'none' }}>
-          <div className="mono" style={{ fontSize: '0.85rem', color: '#fff' }}>{tooltip.name}</div>
-          <div className="text-dim" style={{ fontSize: '0.75rem' }}>{tooltip.note}</div>
-        </div>
-      )}
-    </div>
-  );
-};
+const complexityClasses = [
+  {
+    name: 'EXPTIME',
+    definition: 'Deterministic Turing Machine in 2^(p(n)) time',
+    bound: 'O(2^n^k)',
+    problems: 'Generalized Chess, Checkers, Go (n×n with superko)',
+    accent: 'var(--accent)'
+  },
+  {
+    name: 'PSPACE',
+    definition: 'Deterministic / Nondeterministic polynomial space',
+    bound: 'SPACE(poly(n))',
+    problems: 'Quantified Boolean Formulas (QBF), Sokoban, Geography',
+    accent: 'var(--fg-dim)'
+  },
+  {
+    name: 'NP / co-NP',
+    definition: 'Polynomial-time verifiable / refutable certificates',
+    bound: 'NTIME(poly(n))',
+    problems: '3-SAT, Traveling Salesperson (TSP), Clique, TAUT',
+    accent: 'var(--fg)'
+  },
+  {
+    name: 'P',
+    definition: 'Deterministic polynomial-time solvable',
+    bound: 'DTIME(poly(n))',
+    problems: 'Linear Programming, Maximum Flow, Sorting, Minimum Spanning Tree',
+    accent: 'var(--fg)'
+  }
+];
 
 const AlgorithmsView = () => {
   return (
     <div>
       <h1 className="mono">/lib/algorithms</h1>
       <p className="text-dim mb-4">
-        Theoretical analysis and applied computational mathematics. Below is an interactive mapping of the foundational complexity classes guiding algorithm design limits.
+        Theoretical computer science, algorithmic complexity frontiers, and applied computational mathematics.
       </p>
 
-      <ComplexityMap />
+      {/* Static Complexity Hierarchy Specification */}
+      <div className="card mb-8">
+        <div className="flex" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
+          <div>
+            <span className="mono text-dim" style={{ fontSize: '0.75rem' }}>TAXONOMY // COMPLEXITY_LANDSCAPE</span>
+            <h2 className="mono" style={{ fontSize: '1.1rem', margin: 0, marginTop: '0.25rem' }}>
+              Computational Complexity Class Containment Hierarchy
+            </h2>
+          </div>
+          <span className="mono text-dim" style={{ fontSize: '0.85rem' }}>P ⊆ NP ⊆ PSPACE ⊆ EXPTIME</span>
+        </div>
+
+        <div style={{ overflowX: 'auto', marginBottom: '1.25rem' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--fg-dim)' }}>
+                <th style={{ padding: '0.6rem 0.8rem' }}>CLASS</th>
+                <th style={{ padding: '0.6rem 0.8rem' }}>ASYMPTOTIC BOUND</th>
+                <th style={{ padding: '0.6rem 0.8rem' }}>FORMAL CHARACTERIZATION</th>
+                <th style={{ padding: '0.6rem 0.8rem' }}>CANONICAL COMPLETE PROBLEMS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {complexityClasses.map(c => (
+                <tr key={c.name} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '0.8rem', fontWeight: 600, color: c.accent }}>{c.name}</td>
+                  <td style={{ padding: '0.8rem' }}><span className="badge">{c.bound}</span></td>
+                  <td style={{ padding: '0.8rem', color: 'var(--fg-dim)' }}>{c.definition}</td>
+                  <td style={{ padding: '0.8rem' }}>{c.problems}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mono text-dim" style={{ fontSize: '0.8rem', background: '#0a0a0a', padding: '0.85rem 1rem', border: '1px solid var(--border)' }}>
+          <strong style={{ color: 'var(--fg)' }}>OPEN_PROBLEM:</strong> P vs NP • NP ∩ co-NP \ P • Quantum Polynomial Time (BQP) containment relative to PH.
+        </div>
+      </div>
 
       <div className="card mb-4">
         <h2 className="mono" style={{ fontSize: '1.1rem' }}>Graph Theory: Network Flow</h2>

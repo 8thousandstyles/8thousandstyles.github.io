@@ -1,8 +1,100 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import HomeView from '../components/views/HomeView.jsx';
+// Landing Page: Fullscreen looping video with Enter key navigation to /home
 ---
 
-<Layout title="SYS_ARCHITECT | Benchmark & Runtime Analysis">
-  <HomeView client:load />
-</Layout>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>SYS_ARCHITECT</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: #000000;
+        cursor: default;
+        font-family: 'JetBrains Mono', monospace;
+      }
+      .landing-media {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #000000;
+      }
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="landing-viewport" class="landing-media">
+      <video
+        id="bg-video"
+        autoplay
+        loop
+        muted
+        playsinline
+        preload="auto"
+      >
+        <source src="/1.webm" type="video/webm" />
+      </video>
+    </div>
+
+    <script>
+      function proceedToHome() {
+        window.location.href = '/home';
+      }
+
+      // Keyboard navigation: Enter or Space key only (Desktop)
+      window.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ' || event.code === 'Space') {
+          event.preventDefault();
+          proceedToHome();
+        }
+      });
+
+      // Mobile Touch Gesture: Swipe Up only
+      // Only active on actual touch devices; ignored on PC mouse interactions
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+      if (isTouchDevice) {
+        let touchStartY = 0;
+        let touchStartX = 0;
+
+        window.addEventListener('touchstart', (event) => {
+          touchStartY = event.touches[0].clientY;
+          touchStartX = event.touches[0].clientX;
+        }, { passive: true });
+
+        window.addEventListener('touchend', (event) => {
+          const touchEndY = event.changedTouches[0].clientY;
+          const touchEndX = event.changedTouches[0].clientX;
+
+          const deltaY = touchStartY - touchEndY; // positive when swiping upwards
+          const deltaX = Math.abs(touchStartX - touchEndX);
+
+          // Threshold: at least 45px upward and predominantly vertical
+          if (deltaY > 45 && deltaY > deltaX) {
+            proceedToHome();
+          }
+        }, { passive: true });
+      }
+    </script>
+  </body>
+</html>
