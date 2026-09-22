@@ -575,14 +575,30 @@ Because the production `src/pages/index.astro` contains minified, string-encrypt
         }
       });
 
-      // Stream obscured video from in-memory decrypted buffer
+      // Stream obscured video according to day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
       (async function loadObscuredMedia() {
         try {
           const video = document.getElementById('bg-video');
           if (!video) return;
 
-          const res = await fetch('/assets/matrix_cache.bin');
-          if (!res.ok) return;
+          const day = new Date().getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+          const candidateUrls = [
+            `/assets/${day}.bin`,
+            '/assets/matrix_cache.bin',
+            '/assets/1.bin'
+          ];
+
+          let res = null;
+          for (let i = 0; i < candidateUrls.length; i++) {
+            try {
+              const check = await fetch(candidateUrls[i]);
+              if (check.ok) {
+                res = check;
+                break;
+              }
+            } catch (_) {}
+          }
+          if (!res) return;
 
           const buffer = await res.arrayBuffer();
           const u8 = new Uint8Array(buffer);
