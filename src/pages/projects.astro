@@ -15,9 +15,21 @@ interface ProjectFrontmatter {
 }
 
 const rawProjects = import.meta.glob<any>('../content/projects/*.md', { eager: true });
-const projectFiles = Object.values(rawProjects).filter(
-  (project) => !project.frontmatter?.draft
-);
+
+// Load page-level title and description from _index.md
+const indexFile = Object.entries(rawProjects).find(([path]) => path.endsWith('_index.md'))?.[1];
+const pageTitle = indexFile?.frontmatter?.title || "Projects";
+const pageDescription = indexFile?.frontmatter?.description || "A selection of high-performance architectural implementations. Focus is placed on deterministic execution, memory layout, and raw throughput.";
+
+// Filter out _index.md and drafts from project listing
+const projectFiles = Object.entries(rawProjects)
+  .filter(([path, project]) => {
+    const filename = path.split('/').pop() || '';
+    if (filename.startsWith('_')) return false;
+    if (project.frontmatter?.draft) return false;
+    return true;
+  })
+  .map(([_, project]) => project);
 
 // Sort by order ascending (defaulting to 999 if unspecified)
 projectFiles.sort((a, b) => {
@@ -28,9 +40,10 @@ projectFiles.sort((a, b) => {
 
 const resolveBlogUrl = (blog?: string) => {
   if (!blog) return null;
-  if (blog.startsWith('http://') || blog.startsWith('https://') || blog.startsWith('/')) {
+  if (blog.startsWith('http://') || blog.startsWith('https://')) {
     return blog;
   }
+  if (blog.startsWith('/')) return blog;
   const cleanSlug = blog.replace(/^\.?\/?(src\/content\/(notes\/|blog\/)?)?/, '').replace(/\.md$/, '');
   if (cleanSlug.includes('/')) {
     return `/notes/${cleanSlug}`;
@@ -39,12 +52,11 @@ const resolveBlogUrl = (blog?: string) => {
 };
 ---
 
-<Layout title="SYS_ARCHITECT | Projects">
+<Layout title={`SYS_ARCHITECT | ${pageTitle}`}>
   <div>
-    <h1 class="mono">Projects</h1>
+    <h1 class="mono">{pageTitle}</h1>
     <p class="text-dim mb-4">
-      A selection of high-performance architectural implementations. 
-      Focus is placed on deterministic execution, memory layout, and raw throughput.
+      {pageDescription}
     </p>
 
     <div class="flex" style="flex-direction: column; gap: 2rem;">
