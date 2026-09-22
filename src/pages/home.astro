@@ -1,8 +1,135 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import HomeView from '../components/views/HomeView.jsx';
+
+// Eagerly load home page configuration and markdown content from _index.md
+const homeFiles = import.meta.glob<any>([
+  '../content/home/_index.md',
+  '../content/home/index.md',
+  '../content/home.md'
+], { eager: true });
+
+const homeEntry = Object.values(homeFiles)[0];
+const frontmatter = homeEntry?.frontmatter || {};
+const Content = homeEntry?.Content;
+
+const title = frontmatter.title || "Runtime Analysis & Systems Architecture";
+const tagline = frontmatter.tagline || "A portfolio rooted in computational rigor, mechanical sympathy, and algorithmic complexity.";
+const status = frontmatter.status || "SYSTEM_ACTIVE // KERNEL_EVAL";
+
+const resume = frontmatter.resume || {
+  label: "View Full Resume / CV →",
+  path: "/resume"
+};
+
+const endpointsTitle = frontmatter.endpointsTitle || "Authorized Endpoints";
+const endpoints = frontmatter.endpoints || [
+  { label: "EMAIL:", value: "alex@sysarchitect.dev", url: "mailto:alex@sysarchitect.dev", accent: true },
+  { label: "GITHUB:", value: "github.com/sysarchitect", url: "https://github.com/sysarchitect" },
+  { label: "LINKEDIN:", value: "linkedin.com/in/sysarchitect", url: "https://linkedin.com" }
+];
+
+const focusAreas = frontmatter.focusAreas || frontmatter.focus_areas || [
+  {
+    title: "Systems Engineering",
+    desc: "Deep expertise in POSIX compliance, memory management (custom allocators), and high-throughput concurrent processing in C and Rust."
+  },
+  {
+    title: "High-Performance Computing",
+    desc: "Architecting massively parallel algorithms using CUDA and MPI. Optimizing cache locality and leveraging SIMD instructions."
+  }
+];
 ---
 
-<Layout title="SYS_ARCHITECT | Benchmark & Runtime Analysis">
-  <HomeView />
+<Layout title={`SYS_ARCHITECT | ${title}`}>
+  <div>
+    <h1 class="mono">{title}</h1>
+    {tagline && (
+      <p class="text-dim mb-4" style="max-width: 800px;">
+        {tagline}
+      </p>
+    )}
+
+    {/* Primary Bio & Portfolio Overview Card */}
+    <div class="card mb-8">
+      <div class="flex" style="justify-content: space-between; align-items: baseline; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+          <span class="mono text-dim" style="font-size: 0.75rem;">PROFILE // ARCHITECTURAL_OVERVIEW</span>
+          <h2 class="mono" style="font-size: 1.1rem; margin: 0; margin-top: 0.25rem;">
+            About Me & Systems Portfolio
+          </h2>
+        </div>
+        {status && <span class="badge">{status}</span>}
+      </div>
+
+      <div class="text-dim home-prose">
+        {Content ? (
+          <Content />
+        ) : (
+          <p>
+            I am a systems engineer and software researcher specializing in low-latency infrastructure, distributed consensus models, and hardware-accelerated computing.
+          </p>
+        )}
+      </div>
+
+      {/* Redirection to Resume Panel */}
+      {resume?.path && (
+        <div style="border-top: 1px solid var(--border); padding-top: 1.25rem; margin-top: 1.5rem;" class="flex items-center justify-between flex-wrap gap-2">
+          <span class="mono text-dim" style="font-size: 0.8rem;">
+            CURRICULUM_VITAE // DATA_SOURCE
+          </span>
+          <a 
+            href={resume.path} 
+            class="badge tag-link mono" 
+            style="padding: 0.45rem 0.85rem; font-size: 0.85rem; border-color: var(--border); color: var(--fg);"
+          >
+            {resume.label || "View Full Resume / CV →"}
+          </a>
+        </div>
+      )}
+    </div>
+
+    {/* Authorized Endpoints Card (matching contact panel's exact details, no redirection) */}
+    <div class="card mb-8">
+      <h2 class="mono" style="font-size: 1.1rem; margin-bottom: 1rem;">
+        {endpointsTitle}
+      </h2>
+      <ul class="mono text-dim" style="list-style: none; display: flex; flex-direction: column; gap: 0.8rem; font-size: 0.9rem; padding: 0; margin: 0;">
+        {endpoints.map((ep: any) => (
+          <li>
+            <span style="color: var(--fg); display: inline-block; width: 100px;">{ep.label}</span>
+            <a 
+              href={ep.url} 
+              target={ep.url?.startsWith('http') ? '_blank' : undefined} 
+              rel={ep.url?.startsWith('http') ? 'noreferrer' : undefined}
+              style={ep.accent ? 'color: var(--accent);' : undefined}
+            >
+              {ep.value || ep.url}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    {/* Focus Areas Grid */}
+    {focusAreas.length > 0 && (
+      <div class="grid-2 mt-8">
+        {focusAreas.map((area: any) => (
+          <div>
+            <h3 class="mono">{area.title}</h3>
+            <p class="text-dim">{area.desc}</p>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
 </Layout>
+
+<style>
+  .home-prose :global(p) {
+    line-height: 1.6;
+    margin-bottom: 0.85rem;
+  }
+  .home-prose :global(p:last-child) {
+    margin-bottom: 0;
+  }
+</style>

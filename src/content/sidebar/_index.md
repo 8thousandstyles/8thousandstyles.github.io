@@ -1,7 +1,7 @@
 ---
-title: "SYS_ARCHITECT"
-tagline: "High-Performance Computing\nSystems Engineering"
-navHeader: "Navigation"
+title: "8THOUSANDSTYLES"
+tagline: "- An Explorer\n- Computer Science Engineering"
+navHeader: "Panels"
 nav:
   - title: "Home"
     path: "/home"
@@ -19,7 +19,7 @@ themeToggle:
 linksHeader: "Links"
 links:
   - title: "GitHub"
-    url: "https://github.com"
+    url: "https://github.com/8thousandstyles"
   - title: "Publications"
     url: "https://scholar.google.com"
 copyright: "© 2026 0xguava"
