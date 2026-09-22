@@ -11,45 +11,120 @@ const normalize = (path: string) => {
 };
 
 const normPath = normalize(currentPath);
+
+// Eagerly load sidebar configuration from _index.md
+const sidebarFiles = import.meta.glob<any>([
+  '../content/sidebar/_index.md',
+  '../content/sidebar/index.md',
+  '../content/sidebar.md',
+  '../content/_sidebar.md'
+], { eager: true });
+
+const sidebarEntry = Object.values(sidebarFiles)[0];
+const data = sidebarEntry?.frontmatter || {};
+
+// 1. Header Title and Tagline
+const title = data.title ?? "SYS_ARCHITECT";
+const tagline = data.tagline ?? data.subtitle ?? data.description ?? "High-Performance Computing\nSystems Engineering";
+const taglineLines = typeof tagline === 'string' ? tagline.split('\n') : [String(tagline)];
+
+// 2. Navigation Items
+const navHeader = data.navHeader ?? data.nav_header ?? "Navigation";
+const defaultNav = [
+  { title: "Home", path: "/home" },
+  { title: "Projects", path: "/projects" },
+  { title: "Notes", path: "/notes" },
+  { title: "Resume", path: "/resume" },
+  { title: "Contact", path: "/contact" }
+];
+const rawNav = Array.isArray(data.nav) ? data.nav : defaultNav;
+const navItems = rawNav.map((item: any) => ({
+  title: item.title ?? item.label ?? item.name ?? "Link",
+  path: item.path ?? item.url ?? item.href ?? "/"
+}));
+
+// Helper to determine active state of navigation links
+const isLinkActive = (itemPath: string) => {
+  const normItem = normalize(itemPath);
+  if (normItem === '/home') {
+    return normPath === '/home' || normPath === '' || normPath === '/';
+  }
+  if (normItem === '/' || normItem === '') {
+    return normPath === '' || normPath === '/' || normPath === '/home';
+  }
+  return normPath === normItem || normPath.startsWith(normItem + '/');
+};
+
+// 3. Theme Toggle Button
+const themeToggle = data.themeToggle ?? data.theme_toggle ?? {};
+const showThemeToggle = themeToggle.enabled !== false;
+const themeToggleLabel = themeToggle.label ?? themeToggle.text ?? "Toggle Theme";
+
+// 4. External Links Section
+const linksHeader = data.linksHeader ?? data.links_header ?? "Links";
+const defaultLinks = [
+  { title: "GitHub", url: "https://github.com" },
+  { title: "Publications", url: "https://scholar.google.com" }
+];
+const rawLinks = Array.isArray(data.links) ? data.links : defaultLinks;
+const linksItems = rawLinks.map((item: any) => ({
+  title: item.title ?? item.label ?? item.name ?? "Link",
+  url: item.url ?? item.href ?? item.path ?? "#",
+  target: item.target ?? "_blank",
+  rel: item.rel ?? "noreferrer"
+}));
 ---
 
 <nav class="sidebar">
   <div>
     <h2 class="mono" style="font-size: 1.2rem; margin-bottom: 0.5rem;">
-      SYS_ARCHITECT
+      {title}
     </h2>
     <p class="text-dim" style="font-size: 0.85rem;">
-      High-Performance Computing<br/>
-      Systems Engineering
+      {taglineLines.map((line: string, i: number) => (
+        <>
+          {line}
+          {i < taglineLines.length - 1 && <br />}
+        </>
+      ))}
     </p>
   </div>
 
-  <div class="nav-section">
-    <span class="nav-header">Navigation</span>
-    <a href="/home" class:list={["nav-link", { active: normPath === "/home" }]}>
-      Home
-    </a>
-    <a href="/projects" class:list={["nav-link", { active: normPath === "/projects" }]}>
-      Projects
-    </a>
-    <a href="/notes" class:list={["nav-link", { active: normPath === "/notes" || normPath.startsWith("/notes/") }]}>
-      Notes
-    </a>
-    <a href="/resume" class:list={["nav-link", { active: normPath === "/resume" }]}>
-      Resume
-    </a>
-    <a href="/contact" class:list={["nav-link", { active: normPath === "/contact" }]}>
-      Contact
-    </a>
-  </div>
+  {navItems.length > 0 && (
+    <div class="nav-section">
+      {navHeader && <span class="nav-header">{navHeader}</span>}
+      {navItems.map((item: any) => (
+        <a 
+          href={item.path} 
+          class:list={["nav-link", { active: isLinkActive(item.path) }]}
+        >
+          {item.title}
+        </a>
+      ))}
+    </div>
+  )}
 
   <div class="nav-section" style="margin-top: auto;">
-    <button id="theme-toggle-btn" style="width: 100%; margin-bottom: 1rem; text-align: left;">
-      [ Toggle Theme ]
-    </button>
-    <span class="nav-header">Links</span>
-    <a href="https://github.com" target="_blank" rel="noreferrer" class="nav-link">GitHub</a>
-    <a href="https://scholar.google.com" target="_blank" rel="noreferrer" class="nav-link">Publications</a>
+    {showThemeToggle && (
+      <button id="theme-toggle-btn" class="theme-toggle-btn">
+        [ {themeToggleLabel} ]
+      </button>
+    )}
+    {linksItems.length > 0 && (
+      <>
+        {linksHeader && <span class="nav-header">{linksHeader}</span>}
+        {linksItems.map((item: any) => (
+          <a 
+            href={item.url} 
+            target={item.target} 
+            rel={item.rel} 
+            class="nav-link"
+          >
+            {item.title}
+          </a>
+        ))}
+      </>
+    )}
   </div>
 </nav>
 

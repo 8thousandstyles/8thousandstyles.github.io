@@ -122,12 +122,29 @@ const {
         });
       }
 
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setupCodeBlocks);
-      } else {
-        setupCodeBlocks();
+      function setupExternalLinks() {
+        const externalLinks = document.querySelectorAll(
+          '.blog-article-content a[href^="http"], .project-content a[href^="http"]'
+        );
+        externalLinks.forEach((link) => {
+          if (!link.hasAttribute('target')) {
+            link.setAttribute('target', '_blank');
+            link.setAttribute('rel', 'noopener noreferrer');
+          }
+        });
       }
-      document.addEventListener('astro:after-swap', setupCodeBlocks);
+
+      function initClientFeatures() {
+        setupCodeBlocks();
+        setupExternalLinks();
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initClientFeatures);
+      } else {
+        initClientFeatures();
+      }
+      document.addEventListener('astro:after-swap', initClientFeatures);
     </script>
   </body>
 </html>

@@ -1,0 +1,54 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="404: Not Found | SYS_ARCHITECT" description="The requested route could not be found.">
+  <div class="error-container">
+    <div style="margin-bottom: 1.5rem;">
+      <span class="badge error-badge mono">
+        ERR_PAGE_FAULT // 404
+      </span>
+    </div>
+
+    <h1 class="mono error-title">
+      404: ROUTE_NOT_FOUND
+    </h1>
+
+    <p class="text-dim error-description">
+      The requested execution path or virtual address could not be resolved in the routing table.
+      The target segment may have been unlinked, deallocated, or never mapped.
+    </p>
+  </div>
+</Layout>
+
+<style>
+  .error-container {
+    max-width: 680px;
+    padding-top: 1rem;
+  }
+
+  .error-badge {
+    color: var(--accent);
+    border-color: var(--accent);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+  }
+
+  .error-title {
+    font-size: 2.25rem;
+    margin-bottom: 1rem;
+    letter-spacing: -0.03em;
+    color: var(--fg);
+  }
+
+  .error-description {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 640px) {
+    .error-title {
+      font-size: 1.75rem;
+    }
+  }
+</style>

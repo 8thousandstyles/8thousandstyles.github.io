@@ -187,6 +187,15 @@ button.active {
   color: #fff;
 }
 
+.theme-toggle-btn {
+  width: 100%;
+  margin-bottom: 1rem;
+  text-align: left;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  padding: 0.5rem 0.65rem;
+}
+
 /* Utilities */
 .text-dim { color: var(--fg-dim); }
 .mb-1 { margin-bottom: 0.5rem; }
@@ -322,6 +331,108 @@ body.light-theme .project-content :not(pre) > code {
 .blog-article-content li {
   margin-bottom: 0.4rem;
 }
+
+/* In-content Reference Links */
+.blog-article-content a:not(.toc-link),
+.project-content a:not(.tag-link):not(.project-title-link) {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  font-weight: 500;
+  background: rgba(255, 51, 102, 0.08);
+  border: 1px solid rgba(255, 51, 102, 0.25);
+  border-bottom: 2px solid var(--accent);
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  text-decoration: none !important;
+  transition: all 0.15s ease;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.blog-article-content a:not(.toc-link):hover,
+.project-content a:not(.tag-link):not(.project-title-link):hover {
+  background: var(--accent);
+  color: #ffffff !important;
+  border-color: var(--accent);
+  text-decoration: none !important;
+}
+
+/* Link Indicator Formatting (with tight spacing) */
+.blog-article-content a:not(.toc-link)::after,
+.project-content a:not(.tag-link):not(.project-title-link)::after {
+  font-size: 0.8em;
+  line-height: 1;
+  margin-left: 0.2rem;
+  display: inline-block;
+  opacity: 0.85;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+/* External Links: ↗ with tight spacing */
+.blog-article-content a[href^="http"]:not(.toc-link)::after,
+.blog-article-content a[href^="//"]:not(.toc-link)::after,
+.blog-article-content a[target="_blank"]:not(.toc-link)::after,
+.project-content a[href^="http"]:not(.tag-link):not(.project-title-link)::after,
+.project-content a[href^="//"]:not(.tag-link):not(.project-title-link)::after,
+.project-content a[target="_blank"]:not(.tag-link):not(.project-title-link)::after {
+  content: '↗';
+  vertical-align: 0.08em;
+}
+
+.blog-article-content a[href^="http"]:not(.toc-link):hover::after,
+.blog-article-content a[href^="//"]:not(.toc-link):hover::after,
+.blog-article-content a[target="_blank"]:not(.toc-link):hover::after,
+.project-content a[href^="http"]:not(.tag-link):not(.project-title-link):hover::after,
+.project-content a[href^="//"]:not(.tag-link):not(.project-title-link):hover::after,
+.project-content a[target="_blank"]:not(.tag-link):not(.project-title-link):hover::after {
+  transform: translate(1px, -1px);
+  opacity: 1;
+}
+
+/* Internal Local Links: → with tight spacing */
+.blog-article-content a:not([href^="http"]):not([href^="//"]):not([href^="#"]):not(.toc-link)::after,
+.project-content a:not([href^="http"]):not([href^="//"]):not([href^="#"]):not(.tag-link):not(.project-title-link)::after {
+  content: '→';
+  vertical-align: 0.02em;
+}
+
+.blog-article-content a:not([href^="http"]):not([href^="//"]):not([href^="#"]):not(.toc-link):hover::after,
+.project-content a:not([href^="http"]):not([href^="//"]):not([href^="#"]):not(.tag-link):not(.project-title-link):hover::after {
+  transform: translateX(2px);
+  opacity: 1;
+}
+
+/* In-page section anchors (#heading): no trailing arrow */
+.blog-article-content a[href^="#"]:not(.toc-link)::after,
+.project-content a[href^="#"]:not(.tag-link):not(.project-title-link)::after {
+  content: '';
+}
+
+.blog-article-content a code,
+.project-content a code {
+  color: inherit !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+body.light-theme .blog-article-content a:not(.toc-link),
+body.light-theme .project-content a:not(.tag-link):not(.project-title-link) {
+  color: var(--accent);
+  background: rgba(216, 27, 67, 0.08);
+  border: 1px solid rgba(216, 27, 67, 0.25);
+  border-bottom: 2px solid var(--accent);
+}
+
+body.light-theme .blog-article-content a:not(.toc-link):hover,
+body.light-theme .project-content a:not(.tag-link):not(.project-title-link):hover {
+  background: var(--accent);
+  color: #ffffff !important;
+  border-color: var(--accent);
+}
+
+
 
 .blog-article-content :not(pre) > code {
   font-family: var(--font-mono);
