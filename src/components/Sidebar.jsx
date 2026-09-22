@@ -25,6 +25,9 @@ const Sidebar = () => {
         <NavLink to="/algorithms" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           /lib/algorithms
         </NavLink>
+        <NavLink to="/contact" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+          /etc/network
+        </NavLink>
       </div>
 
       <div className="nav-section" style={{ marginTop: 'auto' }}>

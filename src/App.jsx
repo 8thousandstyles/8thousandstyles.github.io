@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import Home from './pages/Home';
 import Projects from './pages/Projects';
 import Algorithms from './pages/Algorithms';
+import Contact from './pages/Contact';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/algorithms" element={<Algorithms />} />
+            <Route path="/contact" element={<Contact />} />
           </Routes>
         </main>
       </div>
