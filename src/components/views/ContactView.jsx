@@ -1,14 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 const ContactView = () => {
-  const [status, setStatus] = useState('idle');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setStatus('processing');
-    setTimeout(() => setStatus('success'), 800);
-  };
-
   return (
     <div>
       <h1 className="mono">/etc/network</h1>
@@ -24,7 +16,7 @@ const ContactView = () => {
           Initialize a secure connection by submitting the payload below. The system will respond with a 200 OK and initiate a reply sequence.
         </p>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form id="contact-handshake-form" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
             <label className="mono text-dim" style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem' }}>"reply_to": &lt;String&gt;</label>
             <input 
@@ -45,10 +37,8 @@ const ContactView = () => {
           </div>
           
           <div>
-            <button type="submit" disabled={status !== 'idle'} style={{ width: '100%' }}>
-              {status === 'idle' && 'Execute Request'}
-              {status === 'processing' && 'Transmitting...'}
-              {status === 'success' && '200 OK: Handshake Accepted'}
+            <button id="contact-submit-btn" type="submit" style={{ width: '100%' }}>
+              Execute Request
             </button>
           </div>
         </form>
@@ -73,6 +63,34 @@ const ContactView = () => {
           </li>
         </ul>
       </div>
+
+      <script dangerouslySetInnerHTML={{
+        __html: `
+          (function() {
+            function setupContactForm() {
+              const form = document.getElementById('contact-handshake-form');
+              const btn = document.getElementById('contact-submit-btn');
+              if (!form || !btn) return;
+
+              form.onsubmit = function(e) {
+                e.preventDefault();
+                btn.disabled = true;
+                btn.textContent = 'Transmitting...';
+                setTimeout(function() {
+                  btn.textContent = '200 OK: Handshake Accepted';
+                }, 800);
+              };
+            }
+
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', setupContactForm);
+            } else {
+              setupContactForm();
+            }
+            document.addEventListener('astro:after-swap', setupContactForm);
+          })();
+        `
+      }} />
     </div>
   );
 };

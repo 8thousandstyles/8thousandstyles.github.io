@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 const resumeData = {
   "name": "Alex Chen",
@@ -30,8 +30,6 @@ const resumeData = {
 };
 
 const ResumeView = () => {
-  const [view, setView] = useState('raw'); // 'raw' or 'compiled'
-
   return (
     <div>
       <div className="flex" style={{ justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
@@ -40,12 +38,12 @@ const ResumeView = () => {
           <p className="text-dim mt-2">Curriculum Vitae data source.</p>
         </div>
         <div className="flex gap-2">
-          <button className={view === 'raw' ? 'active' : ''} onClick={() => setView('raw')}>RAW JSON</button>
-          <button className={view === 'compiled' ? 'active' : ''} onClick={() => setView('compiled')}>COMPILED HTML</button>
+          <button id="btn-raw-view" className="active" type="button">RAW JSON</button>
+          <button id="btn-compiled-view" type="button">COMPILED HTML</button>
         </div>
       </div>
 
-      {view === 'raw' ? (
+      <div id="panel-raw-view">
         <pre className="mono" style={{ 
           background: 'var(--bg)', 
           border: '1px solid var(--border)', 
@@ -56,7 +54,9 @@ const ResumeView = () => {
         }}>
           {JSON.stringify(resumeData, null, 2)}
         </pre>
-      ) : (
+      </div>
+
+      <div id="panel-compiled-view" style={{ display: 'none' }}>
         <div className="card" style={{ background: 'var(--bg)' }}>
           <h1 style={{ borderBottom: '2px solid var(--border)', paddingBottom: '1rem', marginBottom: '1rem' }}>
             {resumeData.name} <span className="text-dim" style={{ fontWeight: 'normal', fontSize: '1.2rem' }}>| {resumeData.title}</span>
@@ -94,7 +94,43 @@ const ResumeView = () => {
             </div>
           </div>
         </div>
-      )}
+      </div>
+
+      <script dangerouslySetInnerHTML={{
+        __html: `
+          (function() {
+            function setupResumeTabs() {
+              const btnRaw = document.getElementById('btn-raw-view');
+              const btnCompiled = document.getElementById('btn-compiled-view');
+              const panelRaw = document.getElementById('panel-raw-view');
+              const panelCompiled = document.getElementById('panel-compiled-view');
+
+              if (!btnRaw || !btnCompiled || !panelRaw || !panelCompiled) return;
+
+              btnRaw.onclick = function() {
+                btnRaw.classList.add('active');
+                btnCompiled.classList.remove('active');
+                panelRaw.style.display = 'block';
+                panelCompiled.style.display = 'none';
+              };
+
+              btnCompiled.onclick = function() {
+                btnCompiled.classList.add('active');
+                btnRaw.classList.remove('active');
+                panelRaw.style.display = 'none';
+                panelCompiled.style.display = 'block';
+              };
+            }
+
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', setupResumeTabs);
+            } else {
+              setupResumeTabs();
+            }
+            document.addEventListener('astro:after-swap', setupResumeTabs);
+          })();
+        `
+      }} />
     </div>
   );
 };
