@@ -3,7 +3,7 @@ title: "\"Art is not constructive. It flows.\""
 tagline: "As mentioned in the quote above, "
 status: "SYSTEM_ACTIVE // KERNEL_EVAL"
 resume:
-  label: "View Full Resume / CV →"
+  label: "resume →"
   path: "/resume"
 endpointsTitle: "Authorized Endpoints"
 endpoints:
@@ -18,6 +18,10 @@ endpoints:
     value: "linkedin.com/in/sysarchitect"
     url: "https://linkedin.com"
 focusAreas:
+  - title: "Systems Engineering"
+    desc: "Deep expertise in POSIX compliance, memory management (custom allocators), and high-throughput concurrent processing in C and Rust."
+  - title: "High-Performance Computing"
+    desc: "Architecting massively parallel algorithms using CUDA and MPI. Optimizing cache locality and leveraging SIMD instructions."
   - title: "Systems Engineering"
     desc: "Deep expertise in POSIX compliance, memory management (custom allocators), and high-throughput concurrent processing in C and Rust."
   - title: "High-Performance Computing"
