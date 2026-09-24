@@ -334,7 +334,9 @@ body.light-theme .project-content :not(pre) > code {
 
 /* In-content Reference Links */
 .blog-article-content a:not(.toc-link),
-.project-content a:not(.tag-link):not(.project-title-link) {
+.project-content a:not(.tag-link):not(.project-title-link),
+.home-prose a:not(.tag-link),
+.focus-area-desc a:not(.tag-link) {
   color: var(--accent);
   font-family: var(--font-mono);
   font-size: 0.88em;
@@ -351,7 +353,9 @@ body.light-theme .project-content :not(pre) > code {
 }
 
 .blog-article-content a:not(.toc-link):hover,
-.project-content a:not(.tag-link):not(.project-title-link):hover {
+.project-content a:not(.tag-link):not(.project-title-link):hover,
+.home-prose a:not(.tag-link):hover,
+.focus-area-desc a:not(.tag-link):hover {
   background: var(--accent);
   color: #ffffff !important;
   border-color: var(--accent);
@@ -360,7 +364,9 @@ body.light-theme .project-content :not(pre) > code {
 
 /* Link Indicator Formatting (with tight spacing) */
 .blog-article-content a:not(.toc-link)::after,
-.project-content a:not(.tag-link):not(.project-title-link)::after {
+.project-content a:not(.tag-link):not(.project-title-link)::after,
+.home-prose a:not(.tag-link)::after,
+.focus-area-desc a:not(.tag-link)::after {
   font-size: 0.8em;
   line-height: 1;
   margin-left: 0.2rem;
@@ -375,7 +381,13 @@ body.light-theme .project-content :not(pre) > code {
 .blog-article-content a[target="_blank"]:not(.toc-link)::after,
 .project-content a[href^="http"]:not(.tag-link):not(.project-title-link)::after,
 .project-content a[href^="//"]:not(.tag-link):not(.project-title-link)::after,
-.project-content a[target="_blank"]:not(.tag-link):not(.project-title-link)::after {
+.project-content a[target="_blank"]:not(.tag-link):not(.project-title-link)::after,
+.home-prose a[href^="http"]:not(.tag-link)::after,
+.home-prose a[href^="//"]:not(.tag-link)::after,
+.home-prose a[target="_blank"]:not(.tag-link)::after,
+.focus-area-desc a[href^="http"]:not(.tag-link)::after,
+.focus-area-desc a[href^="//"]:not(.tag-link)::after,
+.focus-area-desc a[target="_blank"]:not(.tag-link)::after {
   content: '↗';
   vertical-align: 0.08em;
 }
@@ -385,32 +397,46 @@ body.light-theme .project-content :not(pre) > code {
 .blog-article-content a[target="_blank"]:not(.toc-link):hover::after,
 .project-content a[href^="http"]:not(.tag-link):not(.project-title-link):hover::after,
 .project-content a[href^="//"]:not(.tag-link):not(.project-title-link):hover::after,
-.project-content a[target="_blank"]:not(.tag-link):not(.project-title-link):hover::after {
+.project-content a[target="_blank"]:not(.tag-link):not(.project-title-link):hover::after,
+.home-prose a[href^="http"]:not(.tag-link):hover::after,
+.home-prose a[href^="//"]:not(.tag-link):hover::after,
+.home-prose a[target="_blank"]:not(.tag-link):hover::after,
+.focus-area-desc a[href^="http"]:not(.tag-link):hover::after,
+.focus-area-desc a[href^="//"]:not(.tag-link):hover::after,
+.focus-area-desc a[target="_blank"]:not(.tag-link):hover::after {
   transform: translate(1px, -1px);
   opacity: 1;
 }
 
 /* Internal Local Links: → with tight spacing */
 .blog-article-content a:not([href^="http"]):not([href^="//"]):not([href^="#"]):not(.toc-link)::after,
-.project-content a:not([href^="http"]):not([href^="//"]):not([href^="#"]):not(.tag-link):not(.project-title-link)::after {
+.project-content a:not([href^="http"]):not([href^="//"]):not([href^="#"]):not(.tag-link):not(.project-title-link)::after,
+.home-prose a:not([href^="http"]):not([href^="//"]):not([href^="#"]):not(.tag-link)::after,
+.focus-area-desc a:not([href^="http"]):not([href^="//"]):not([href^="#"]):not(.tag-link)::after {
   content: '→';
   vertical-align: 0.02em;
 }
 
 .blog-article-content a:not([href^="http"]):not([href^="//"]):not([href^="#"]):not(.toc-link):hover::after,
-.project-content a:not([href^="http"]):not([href^="//"]):not([href^="#"]):not(.tag-link):not(.project-title-link):hover::after {
+.project-content a:not([href^="http"]):not([href^="//"]):not([href^="#"]):not(.tag-link):not(.project-title-link):hover::after,
+.home-prose a:not([href^="http"]):not([href^="//"]):not([href^="#"]):not(.tag-link):hover::after,
+.focus-area-desc a:not([href^="http"]):not([href^="//"]):not([href^="#"]):not(.tag-link):hover::after {
   transform: translateX(2px);
   opacity: 1;
 }
 
 /* In-page section anchors (#heading): no trailing arrow */
 .blog-article-content a[href^="#"]:not(.toc-link)::after,
-.project-content a[href^="#"]:not(.tag-link):not(.project-title-link)::after {
+.project-content a[href^="#"]:not(.tag-link):not(.project-title-link)::after,
+.home-prose a[href^="#"]:not(.tag-link):after,
+.focus-area-desc a[href^="#"]:not(.tag-link)::after {
   content: '';
 }
 
 .blog-article-content a code,
-.project-content a code {
+.project-content a code,
+.home-prose a code,
+.focus-area-desc a code {
   color: inherit !important;
   background: transparent !important;
   border: none !important;
@@ -418,7 +444,9 @@ body.light-theme .project-content :not(pre) > code {
 }
 
 body.light-theme .blog-article-content a:not(.toc-link),
-body.light-theme .project-content a:not(.tag-link):not(.project-title-link) {
+body.light-theme .project-content a:not(.tag-link):not(.project-title-link),
+body.light-theme .home-prose a:not(.tag-link),
+body.light-theme .focus-area-desc a:not(.tag-link) {
   color: var(--accent);
   background: rgba(216, 27, 67, 0.08);
   border: 1px solid rgba(216, 27, 67, 0.25);
@@ -426,7 +454,9 @@ body.light-theme .project-content a:not(.tag-link):not(.project-title-link) {
 }
 
 body.light-theme .blog-article-content a:not(.toc-link):hover,
-body.light-theme .project-content a:not(.tag-link):not(.project-title-link):hover {
+body.light-theme .project-content a:not(.tag-link):not(.project-title-link):hover,
+body.light-theme .home-prose a:not(.tag-link):hover,
+body.light-theme .focus-area-desc a:not(.tag-link):hover {
   background: var(--accent);
   color: #ffffff !important;
   border-color: var(--accent);

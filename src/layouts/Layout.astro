@@ -124,7 +124,7 @@ const {
 
       function setupExternalLinks() {
         const externalLinks = document.querySelectorAll(
-          '.blog-article-content a[href^="http"], .project-content a[href^="http"]'
+          '.blog-article-content a[href^="http"], .project-content a[href^="http"], .home-prose a[href^="http"], .focus-area-desc a[href^="http"]'
         );
         externalLinks.forEach((link) => {
           if (!link.hasAttribute('target')) {

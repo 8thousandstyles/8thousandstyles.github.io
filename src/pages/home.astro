@@ -12,39 +12,50 @@ const homeEntry = Object.values(homeFiles)[0];
 const frontmatter = homeEntry?.frontmatter || {};
 const Content = homeEntry?.Content;
 
-const title = frontmatter.title || "Runtime Analysis & Systems Architecture";
-const tagline = frontmatter.tagline || "A portfolio rooted in computational rigor, mechanical sympathy, and algorithmic complexity.";
-const cardTitle = frontmatter.cardTitle || frontmatter.card_title || "About Me & Systems Portfolio";
+// NO FALLBACKS: Only render what is explicitly configured in _index.md
+const title = frontmatter.title;
+const tagline = frontmatter.tagline;
+const cardTitle = frontmatter.cardTitle ?? frontmatter.card_title ?? frontmatter.aboutTitle ?? frontmatter.about_title;
 
 const resume = frontmatter.resume;
-const resumePath = typeof resume === 'string' ? resume : (resume?.path || "/resume");
-const rawResumeLabel = typeof resume === 'object' ? resume?.label : frontmatter.resumeLabel;
-const resumeLabel = (rawResumeLabel && rawResumeLabel !== "View Full Resume / CV →") 
-  ? rawResumeLabel 
-  : "resume →";
+const resumePath = typeof resume === 'string' ? resume : resume?.path;
+const resumePrefix = typeof resume === 'object' 
+  ? (resume?.prefix ?? resume?.text) 
+  : frontmatter.resumePrefix;
+const resumeLabel = typeof resume === 'object' 
+  ? (resume?.label ?? resume?.text) 
+  : (frontmatter.resumeLabel || resumePath);
 
-const endpointsTitle = frontmatter.endpointsTitle || "Authorized Endpoints";
-const endpoints = frontmatter.endpoints || [
-  { label: "EMAIL:", value: "8thousandstyles@gmail.com", url: "mailto:8thousandstyles@gmail.com", accent: true },
-  { label: "GITHUB:", value: "github.com/8thousandstyles", url: "https://github.com/8thousandstyles" },
-  { label: "LINKEDIN:", value: "linkedin.com/in/sysarchitect", url: "https://linkedin.com" }
-];
+const endpointsTitle = frontmatter.endpointsTitle;
+const rawEndpoints = frontmatter.endpoints;
+let endpoints: any[] = [];
+if (Array.isArray(rawEndpoints)) {
+  endpoints = rawEndpoints;
+} else if (rawEndpoints && typeof rawEndpoints === 'object') {
+  endpoints = Object.entries(rawEndpoints).map(([key, val]: [string, any]) => ({
+    label: `${key.toUpperCase()}:`,
+    value: typeof val === 'string' ? val : val.value,
+    url: typeof val === 'string' ? val : val.url,
+    accent: typeof val === 'object' ? val.accent : false
+  }));
+}
 
-const focusAreas = frontmatter.focusAreas || frontmatter.focus_areas || [
-  {
-    title: "Systems Engineering",
-    desc: "Deep expertise in POSIX compliance, memory management (custom allocators), and high-throughput concurrent processing in C and Rust."
-  },
-  {
-    title: "High-Performance Computing",
-    desc: "Architecting massively parallel algorithms using CUDA and MPI. Optimizing cache locality and leveraging SIMD instructions."
-  }
-];
+const rawFocusAreas = frontmatter.focusAreas || frontmatter.focus_areas;
+const focusAreas = Array.isArray(rawFocusAreas) ? rawFocusAreas : [];
+
+function renderMarkdownLinks(text: string): string {
+  if (!text) return '';
+  return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, linkText, url) => {
+    const isExternal = url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//');
+    const targetRel = isExternal ? ' target="_blank" rel="noreferrer"' : '';
+    return `<a href="${url}"${targetRel}>${linkText}</a>`;
+  });
+}
 ---
 
-<Layout title={`SYS_ARCHITECT | ${title}`}>
+<Layout title={title ? `SYS_ARCHITECT | ${title}` : "SYS_ARCHITECT"}>
   <div>
-    <h1 class="mono">{title}</h1>
+    {title && <h1 class="mono">{title}</h1>}
     {tagline && (
       <p class="text-dim mb-4" style="max-width: 800px;">
         {tagline}
@@ -52,69 +63,76 @@ const focusAreas = frontmatter.focusAreas || frontmatter.focus_areas || [
     )}
 
     {/* Primary Bio & Portfolio Overview Card */}
-    <div class="card mb-8">
-      <div style="margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
-        <h2 class="mono" style="font-size: 1.1rem; margin: 0;">
-          {cardTitle}
-        </h2>
-      </div>
+    {(cardTitle || Content || resumePath) && (
+      <div class="card mb-8">
+        {cardTitle && (
+          <div style={Content || resumePath ? "margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;" : ""}>
+            <h2 class="mono" style="font-size: 1.1rem; margin: 0;">
+              {cardTitle}
+            </h2>
+          </div>
+        )}
 
-      <div class="text-dim home-prose">
-        {Content ? (
-          <Content />
-        ) : (
-          <p>
-            I am a systems engineer and software researcher specializing in low-latency infrastructure, distributed consensus models, and hardware-accelerated computing.
-          </p>
+        {Content && (
+          <div class="text-dim home-prose">
+            <Content />
+          </div>
+        )}
+
+        {/* Redirection to Resume Panel */}
+        {resumePath && (
+          <div style={Content ? "border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1.5rem;" : ""} class="mono text-dim" style="font-size: 0.85rem;">
+            {resumePrefix && <span>{resumePrefix}{resumePrefix.endsWith(' ') ? '' : ' '}</span>}
+            <a 
+              href={resumePath} 
+              class="badge tag-link mono" 
+              style="color: var(--fg); padding: 0.2rem 0.55rem; font-size: 0.8rem; margin-left: 0.25rem;"
+            >
+              {resumeLabel || resumePath}
+            </a>
+          </div>
         )}
       </div>
+    )}
 
-      {/* Redirection to Resume Panel */}
-      {resumePath && (
-        <div style="border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1.5rem;" class="mono text-dim" style="font-size: 0.85rem;">
-          <span>For more info, view </span>
-          <a 
-            href={resumePath} 
-            class="badge tag-link mono" 
-            style="color: var(--fg); padding: 0.2rem 0.55rem; font-size: 0.8rem; margin-left: 0.25rem;"
-          >
-            {resumeLabel}
-          </a>
-        </div>
-      )}
-    </div>
-
-    {/* Authorized Endpoints Card (matching contact panel's exact details, no redirection) */}
-    <div class="card mb-8">
-      <h2 class="mono" style="font-size: 1.1rem; margin-bottom: 1rem;">
-        {endpointsTitle}
-      </h2>
-      <ul class="mono text-dim" style="list-style: none; display: flex; flex-direction: column; gap: 0.8rem; font-size: 0.9rem; padding: 0; margin: 0;">
-        {endpoints.map((ep: any) => (
-          <li>
-            <span style="color: var(--fg); display: inline-block; width: 100px;">{ep.label}</span>
-            <a 
-              href={ep.url} 
-              target={ep.url?.startsWith('http') ? '_blank' : undefined} 
-              rel={ep.url?.startsWith('http') ? 'noreferrer' : undefined}
-              style={ep.accent ? 'color: var(--accent);' : undefined}
-            >
-              {ep.value || ep.url}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
+    {/* Authorized Endpoints Card */}
+    {endpoints && endpoints.length > 0 && (
+      <div class="card mb-8">
+        {endpointsTitle && (
+          <h2 class="mono" style="font-size: 1.1rem; margin-bottom: 1rem;">
+            {endpointsTitle}
+          </h2>
+        )}
+        <ul class="mono text-dim" style="list-style: none; display: flex; flex-direction: column; gap: 0.8rem; font-size: 0.9rem; padding: 0; margin: 0;">
+          {endpoints.map((ep: any) => (
+            <li>
+              {ep.label && <span style="color: var(--fg); display: inline-block; width: 100px;">{ep.label}</span>}
+              <a 
+                href={ep.url || ep.href} 
+                target={(ep.url || ep.href)?.startsWith('http') ? '_blank' : undefined} 
+                rel={(ep.url || ep.href)?.startsWith('http') ? 'noreferrer' : undefined}
+                style={ep.accent ? 'color: var(--accent);' : undefined}
+              >
+                {ep.value || ep.url || ep.href}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
 
     {/* Focus Areas Grid */}
-    {focusAreas.length > 0 && (
+    {focusAreas && focusAreas.length > 0 && (
       <div class="grid-2 mt-8">
-        {focusAreas.map((area: any) => (
-          <div>
-            <h3 class="mono">{area.title}</h3>
-            <p class="text-dim">{area.desc}</p>
-          </div>
-        ))}
+        {focusAreas.map((area: any) => {
+          const descHtml = renderMarkdownLinks(area.desc || area.description || '');
+          return (
+            <div>
+              {area.title && <h3 class="mono">{area.title}</h3>}
+              {descHtml && <p class="text-dim focus-area-desc" set:html={descHtml} />}
+            </div>
+          );
+        })}
       </div>
     )}
   </div>

@@ -1,10 +1,11 @@
 ---
 title: "\"Art is not constructive. It flows.\""
 tagline: "As mentioned in the quote above, "
-status: "SYSTEM_ACTIVE // KERNEL_EVAL"
 resume:
-  label: "resume →"
+  prefix: "For more info, view"
+  label: "Resume →"
   path: "/resume"
+aboutTitle: "About Me & Systems Portfolio"
 endpointsTitle: "Authorized Endpoints"
 endpoints:
   - label: "EMAIL:"
@@ -19,14 +20,20 @@ endpoints:
     url: "https://linkedin.com"
 focusAreas:
   - title: "Systems Engineering"
-    desc: "Deep expertise in POSIX compliance, memory management (custom allocators), and high-throughput concurrent processing in C and Rust."
+    desc: "Deep expertise in POSIX compliance, memory management (custom allocators), and high-throughput concurrent [lol](https://remoji.com) processing in C and Rust."
+  - title: "High-Performance Computing"
+    desc: "Architecting massively parallel algorithms using CUDA and MPI. Optimizing cache locality and leveraging SIMD instructions."
   - title: "High-Performance Computing"
     desc: "Architecting massively parallel algorithms using CUDA and MPI. Optimizing cache locality and leveraging SIMD instructions."
   - title: "Systems Engineering"
     desc: "Deep expertise in POSIX compliance, memory management (custom allocators), and high-throughput concurrent processing in C and Rust."
-  - title: "High-Performance Computing"
-    desc: "Architecting massively parallel algorithms using CUDA and MPI. Optimizing cache locality and leveraging SIMD instructions."
 ---
+
+I am a systems engineer and software researcher specializing in low-latency infrastructure, distributed consensus mode [lol](https://remoji.com)ls, and hardware-accelerated computing. My work emphasizes deterministic execution latencies, cache locality, and mechanical sympathy.
+
+[lol](/notes)
+
+This portfolio serves as an architectural laboratory and repository of runtime benchmarks, distributed algorithms, and systems engineering blueprints. Explore my projects, technical notes, and benchmark reports below.
 
 I am a systems engineer and software researcher specializing in low-latency infrastructure, distributed consensus models, and hardware-accelerated computing. My work emphasizes deterministic execution latencies, cache locality, and mechanical sympathy.
 
