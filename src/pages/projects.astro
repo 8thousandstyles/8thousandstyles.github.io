@@ -14,12 +14,22 @@ interface ProjectFrontmatter {
   tags?: string[];
 }
 
-const rawProjects = import.meta.glob<any>('../content/projects/*.md', { eager: true });
+// Load page-level configuration and markdown content from projects.md or projects/_index.md (these two only)
+const configFiles = import.meta.glob<any>([
+  '../content/projects.md',
+  '../content/projects/_index.md'
+], { eager: true });
+const configEntry = Object.values(configFiles)[0];
+const config = configEntry?.frontmatter || {};
+const Content = configEntry?.Content;
+const hasBodyContent = Boolean(configEntry?.rawContent?.()?.trim());
 
-// Load page-level title and description from _index.md
-const indexFile = Object.entries(rawProjects).find(([path]) => path.endsWith('_index.md'))?.[1];
-const pageTitle = indexFile?.frontmatter?.title || "Projects";
-const pageDescription = indexFile?.frontmatter?.description || "A selection of high-performance architectural implementations. Focus is placed on deterministic execution, memory layout, and raw throughput.";
+// NO FALLBACKS: Only render what is explicitly configured in .md
+const pageTitle = config.title;
+const pageDescription = config.description;
+
+// Load individual project items from ../content/projects/*.md
+const rawProjects = import.meta.glob<any>('../content/projects/*.md', { eager: true });
 
 // Filter out _index.md and drafts from project listing
 const projectFiles = Object.entries(rawProjects)
@@ -33,8 +43,8 @@ const projectFiles = Object.entries(rawProjects)
 
 // Sort by order ascending (defaulting to 999 if unspecified)
 projectFiles.sort((a, b) => {
-  const orderA = a.frontmatter.order ?? 999;
-  const orderB = b.frontmatter.order ?? 999;
+  const orderA = a.frontmatter?.order ?? 999;
+  const orderB = b.frontmatter?.order ?? 999;
   return orderA - orderB;
 });
 
@@ -52,80 +62,96 @@ const resolveBlogUrl = (blog?: string) => {
 };
 ---
 
-<Layout title={`SYS_ARCHITECT | ${pageTitle}`}>
+<Layout title={pageTitle ? `SYS_ARCHITECT | ${pageTitle}` : "SYS_ARCHITECT | Projects"}>
   <div>
-    <h1 class="mono">{pageTitle}</h1>
-    <p class="text-dim mb-4">
-      {pageDescription}
-    </p>
+    {pageTitle && <h1 class="mono">{pageTitle}</h1>}
+    {pageDescription && (
+      <p class="text-dim mb-4">
+        {pageDescription}
+      </p>
+    )}
 
-    <div class="flex" style="flex-direction: column; gap: 2rem;">
-      {projectFiles.map((project) => {
-        const { title, name, spec, github, demo, link, blog, tags } = project.frontmatter;
-        const projectTitle = title || name || "Untitled Project";
-        const Content = project.Content;
-        const liveDemoUrl = demo || link;
-        const blogUrl = resolveBlogUrl(blog);
-        const hasFooter = github || liveDemoUrl || blogUrl;
-        const hasTags = tags && tags.length > 0;
+    {hasBodyContent && Content && (
+      <div class="card mb-8 text-dim home-prose">
+        <Content />
+      </div>
+    )}
 
-        return (
-          <div class="card">
-            <div class="flex" style="justify-content: space-between; align-items: baseline; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-              <h2 class="mono" style="font-size: 1.2rem; margin: 0;">
-                {blogUrl ? (
-                  <a href={blogUrl} class="project-title-link">
-                    {projectTitle}
-                  </a>
-                ) : (
-                  projectTitle
-                )}
-              </h2>
-              {spec && <span class="badge">{spec}</span>}
+    {projectFiles.length > 0 && (
+      <div class="flex" style="flex-direction: column; gap: 2rem;">
+        {projectFiles.map((project) => {
+          const { title, name, spec, github, demo, link, blog, tags } = project.frontmatter || {};
+          const projectTitle = title || name;
+          const ProjectContent = project.Content;
+          const liveDemoUrl = demo || link;
+          const blogUrl = resolveBlogUrl(blog);
+          const hasFooter = github || liveDemoUrl || blogUrl;
+          const hasTags = tags && tags.length > 0;
+
+          return (
+            <div class="card">
+              {(projectTitle || spec) && (
+                <div class="flex" style="justify-content: space-between; align-items: baseline; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                  {projectTitle && (
+                    <h2 class="mono" style="font-size: 1.2rem; margin: 0;">
+                      {blogUrl ? (
+                        <a href={blogUrl} class="project-title-link">
+                          {projectTitle}
+                        </a>
+                      ) : (
+                        projectTitle
+                      )}
+                    </h2>
+                  )}
+                  {spec && <span class="badge">{spec}</span>}
+                </div>
+              )}
+
+              {ProjectContent && (
+                <div class="project-content text-dim">
+                  <ProjectContent />
+                </div>
+              )}
+
+              {hasTags && (
+                <div class="flex mono" style="gap: 0.75rem; font-size: 0.75rem; margin-top: 1.25rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                  {tags.map((t: string) => {
+                    const tagText = t.startsWith('#') ? t : `#${t}`;
+                    return (
+                      <span style="color: var(--fg-dim); opacity: 0.8;">
+                        {tagText}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
+              {hasFooter && (
+                <div 
+                  class="flex gap-2 mono" 
+                  style={`font-size: 0.8rem; border-top: 1px solid var(--border); padding-top: 0.75rem; flex-wrap: wrap; align-items: center; ${!hasTags ? 'margin-top: 1.25rem;' : ''}`}
+                >
+                  {github && (
+                    <a href={github} target="_blank" rel="noreferrer" class="badge tag-link">
+                      GitHub ↗
+                    </a>
+                  )}
+                  {liveDemoUrl && (
+                    <a href={liveDemoUrl} target="_blank" rel="noreferrer" class="badge tag-link">
+                      Live Demo ↗
+                    </a>
+                  )}
+                  {blogUrl && (
+                    <a href={blogUrl} class="badge tag-link">
+                      Blog ↗
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
-
-            <div class="project-content text-dim">
-              <Content />
-            </div>
-
-            {hasTags && (
-              <div class="flex mono" style="gap: 0.75rem; font-size: 0.75rem; margin-top: 1.25rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
-                {tags.map((t: string) => {
-                  const tagText = t.startsWith('#') ? t : `#${t}`;
-                  return (
-                    <span style="color: var(--fg-dim); opacity: 0.8;">
-                      {tagText}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-
-            {hasFooter && (
-              <div 
-                class="flex gap-2 mono" 
-                style={`font-size: 0.8rem; border-top: 1px solid var(--border); padding-top: 0.75rem; flex-wrap: wrap; align-items: center; ${!hasTags ? 'margin-top: 1.25rem;' : ''}`}
-              >
-                {github && (
-                  <a href={github} target="_blank" rel="noreferrer" class="badge tag-link">
-                    GitHub ↗
-                  </a>
-                )}
-                {liveDemoUrl && (
-                  <a href={liveDemoUrl} target="_blank" rel="noreferrer" class="badge tag-link">
-                    Live Demo ↗
-                  </a>
-                )}
-                {blogUrl && (
-                  <a href={blogUrl} class="badge tag-link">
-                    Blog ↗
-                  </a>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    )}
   </div>
 </Layout>

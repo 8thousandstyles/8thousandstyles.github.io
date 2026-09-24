@@ -12,35 +12,30 @@ const normalize = (path: string) => {
 
 const normPath = normalize(currentPath);
 
-// Eagerly load sidebar configuration from _index.md
+// Eagerly load sidebar configuration from sidebar.md or sidebar/_index.md (these two only)
 const sidebarFiles = import.meta.glob<any>([
-  '../content/sidebar/_index.md',
-  '../content/sidebar/index.md',
   '../content/sidebar.md',
-  '../content/_sidebar.md'
+  '../content/sidebar/_index.md'
 ], { eager: true });
-
 const sidebarEntry = Object.values(sidebarFiles)[0];
 const data = sidebarEntry?.frontmatter || {};
 
-// 1. Header Title and Tagline
-const title = data.title ?? "SYS_ARCHITECT";
-const tagline = data.tagline ?? data.subtitle ?? data.description ?? "High-Performance Computing\nSystems Engineering";
-const taglineLines = typeof tagline === 'string' ? tagline.split('\n') : [String(tagline)];
+// 1. Header Title and Tagline (NO FALLBACK)
+const title = data.title;
+const tagline = data.tagline ?? data.subtitle ?? data.description;
+const taglineLines = tagline 
+  ? (typeof tagline === 'string' ? tagline.split('\n') : [String(tagline)]) 
+  : [];
 
-// 2. Navigation Items
-const navHeader = data.navHeader ?? data.nav_header ?? "Navigation";
-const defaultNav = [
-  { title: "Home", path: "/home" },
-  { title: "Projects", path: "/projects" },
-  { title: "Notes", path: "/notes" },
-  { title: "Contact", path: "/contact" }
-];
-const rawNav = Array.isArray(data.nav) ? data.nav : defaultNav;
-const navItems = rawNav.map((item: any) => ({
-  title: item.title ?? item.label ?? item.name ?? "Link",
-  path: item.path ?? item.url ?? item.href ?? "/"
-}));
+// 2. Navigation Items (NO FALLBACK: only render items present in sidebar.md)
+const navHeader = data.navHeader ?? data.nav_header;
+const rawNav = Array.isArray(data.nav) ? data.nav : [];
+const navItems = rawNav
+  .map((item: any) => ({
+    title: item.title ?? item.label ?? item.name,
+    path: item.path ?? item.url ?? item.href
+  }))
+  .filter((item: any) => Boolean(item.title && item.path));
 
 // Helper to determine active state of navigation links
 const isLinkActive = (itemPath: string) => {
@@ -54,43 +49,47 @@ const isLinkActive = (itemPath: string) => {
   return normPath === normItem || normPath.startsWith(normItem + '/');
 };
 
-// 3. Theme Toggle Button
-const themeToggle = data.themeToggle ?? data.theme_toggle ?? {};
-const showThemeToggle = themeToggle.enabled !== false;
-const themeToggleLabel = themeToggle.label ?? themeToggle.text ?? "Toggle Theme";
+// 3. Theme Toggle Button (NO FALLBACK: only render if explicitly configured)
+const themeToggle = data.themeToggle ?? data.theme_toggle;
+const showThemeToggle = themeToggle === true || (typeof themeToggle === 'object' && themeToggle !== null && themeToggle.enabled !== false);
+const themeToggleLabel = (typeof themeToggle === 'object' && themeToggle !== null ? (themeToggle.label ?? themeToggle.text) : undefined) ?? "Toggle Theme";
 
-// 4. External Links Section
-const linksHeader = data.linksHeader ?? data.links_header ?? "Links";
-const defaultLinks = [
-  { title: "GitHub", url: "https://github.com" },
-  { title: "Publications", url: "https://scholar.google.com" }
-];
-const rawLinks = Array.isArray(data.links) ? data.links : defaultLinks;
-const linksItems = rawLinks.map((item: any) => ({
-  title: item.title ?? item.label ?? item.name ?? "Link",
-  url: item.url ?? item.href ?? item.path ?? "#",
-  target: item.target ?? "_blank",
-  rel: item.rel ?? "noreferrer"
-}));
+// 4. External Links Section (NO FALLBACK: only render items present in sidebar.md)
+const linksHeader = data.linksHeader ?? data.links_header;
+const rawLinks = Array.isArray(data.links) ? data.links : [];
+const linksItems = rawLinks
+  .map((item: any) => ({
+    title: item.title ?? item.label ?? item.name,
+    url: item.url ?? item.href ?? item.path,
+    target: item.target ?? "_blank",
+    rel: item.rel ?? "noreferrer"
+  }))
+  .filter((item: any) => Boolean(item.title && item.url));
 
-// 5. Copyright Line
-const copyright = data.copyright ?? `© ${new Date().getFullYear()} 0xguava`;
+// 5. Copyright Line (NO FALLBACK)
+const copyright = data.copyright;
 ---
 
 <nav class="sidebar">
-  <div>
-    <h2 class="mono" style="font-size: 1.2rem; margin-bottom: 0.5rem;">
-      {title}
-    </h2>
-    <p class="text-dim" style="font-size: 0.85rem;">
-      {taglineLines.map((line: string, i: number) => (
-        <>
-          {line}
-          {i < taglineLines.length - 1 && <br />}
-        </>
-      ))}
-    </p>
-  </div>
+  {(title || taglineLines.length > 0) && (
+    <div>
+      {title && (
+        <h2 class="mono" style="font-size: 1.2rem; margin-bottom: 0.5rem;">
+          {title}
+        </h2>
+      )}
+      {taglineLines.length > 0 && (
+        <p class="text-dim" style="font-size: 0.85rem;">
+          {taglineLines.map((line: string, i: number) => (
+            <>
+              {line}
+              {i < taglineLines.length - 1 && <br />}
+            </>
+          ))}
+        </p>
+      )}
+    </div>
+  )}
 
   {navItems.length > 0 && (
     <div class="nav-section">
@@ -106,33 +105,35 @@ const copyright = data.copyright ?? `© ${new Date().getFullYear()} 0xguava`;
     </div>
   )}
 
-  <div class="nav-section" style="margin-top: auto;">
-    {showThemeToggle && (
-      <button id="theme-toggle-btn" class="theme-toggle-btn">
-        [ {themeToggleLabel} ]
-      </button>
-    )}
-    {linksItems.length > 0 && (
-      <>
-        {linksHeader && <span class="nav-header">{linksHeader}</span>}
-        {linksItems.map((item: any) => (
-          <a 
-            href={item.url} 
-            target={item.target} 
-            rel={item.rel} 
-            class="nav-link"
-          >
-            {item.title}
-          </a>
-        ))}
-      </>
-    )}
-    {copyright && (
-      <div class="sidebar-copyright mono text-dim" style="font-size: 0.72rem; margin-top: 1.5rem; opacity: 0.6;">
-        {copyright}
-      </div>
-    )}
-  </div>
+  {(showThemeToggle || linksItems.length > 0 || copyright) && (
+    <div class="nav-section" style="margin-top: auto;">
+      {showThemeToggle && (
+        <button id="theme-toggle-btn" class="theme-toggle-btn">
+          [ {themeToggleLabel} ]
+        </button>
+      )}
+      {linksItems.length > 0 && (
+        <>
+          {linksHeader && <span class="nav-header">{linksHeader}</span>}
+          {linksItems.map((item: any) => (
+            <a 
+              href={item.url} 
+              target={item.target} 
+              rel={item.rel} 
+              class="nav-link"
+            >
+              {item.title}
+            </a>
+          ))}
+        </>
+      )}
+      {copyright && (
+        <div class="sidebar-copyright mono text-dim" style="font-size: 0.72rem; margin-top: 1.5rem; opacity: 0.6;">
+          {copyright}
+        </div>
+      )}
+    </div>
+  )}
 </nav>
 
 <script>

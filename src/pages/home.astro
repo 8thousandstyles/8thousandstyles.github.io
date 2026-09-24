@@ -1,16 +1,16 @@
 ---
 import Layout from '../layouts/Layout.astro';
 
-// Eagerly load home page configuration and markdown content from _index.md
+// Eagerly load home page configuration and markdown content from home.md or home/_index.md (these two only)
 const homeFiles = import.meta.glob<any>([
-  '../content/home/_index.md',
-  '../content/home/index.md',
-  '../content/home.md'
+  '../content/home.md',
+  '../content/home/_index.md'
 ], { eager: true });
 
 const homeEntry = Object.values(homeFiles)[0];
 const frontmatter = homeEntry?.frontmatter || {};
 const Content = homeEntry?.Content;
+const hasBodyContent = Boolean(homeEntry?.rawContent?.()?.trim());
 
 // NO FALLBACKS: Only render what is explicitly configured in _index.md
 const title = frontmatter.title;
@@ -63,17 +63,17 @@ function renderMarkdownLinks(text: string): string {
     )}
 
     {/* Primary Bio & Portfolio Overview Card */}
-    {(cardTitle || Content || resumePath) && (
+    {(cardTitle || hasBodyContent || resumePath) && (
       <div class="card mb-8">
         {cardTitle && (
-          <div style={Content || resumePath ? "margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;" : ""}>
+          <div style={hasBodyContent || resumePath ? "margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;" : ""}>
             <h2 class="mono" style="font-size: 1.1rem; margin: 0;">
               {cardTitle}
             </h2>
           </div>
         )}
 
-        {Content && (
+        {hasBodyContent && Content && (
           <div class="text-dim home-prose">
             <Content />
           </div>
@@ -81,7 +81,7 @@ function renderMarkdownLinks(text: string): string {
 
         {/* Redirection to Resume Panel */}
         {resumePath && (
-          <div style={Content ? "border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1.5rem;" : ""} class="mono text-dim" style="font-size: 0.85rem;">
+          <div style={hasBodyContent ? "border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1.5rem;" : ""} class="mono text-dim" style="font-size: 0.85rem;">
             {resumePrefix && <span>{resumePrefix}{resumePrefix.endsWith(' ') ? '' : ' '}</span>}
             <a 
               href={resumePath} 

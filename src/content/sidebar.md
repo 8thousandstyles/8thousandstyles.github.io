@@ -9,8 +9,6 @@ nav:
     path: "/projects"
   - title: "Notes"
     path: "/notes"
-  - title: "Contact"
-    path: "/contact"
 themeToggle:
   enabled: true
   label: "Toggle Theme"

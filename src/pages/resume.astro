@@ -1,8 +1,204 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import ResumeView from '../components/views/ResumeView.jsx';
+
+// Eagerly load resume configuration and content from resume.md or resume/_index.md (these two only)
+const resumeFiles = import.meta.glob<any>([
+  '../content/resume.md',
+  '../content/resume/_index.md'
+], { eager: true });
+const resumeEntry = Object.values(resumeFiles)[0];
+const frontmatter = resumeEntry?.frontmatter || {};
+const Content = resumeEntry?.Content;
+
+// NO FALLBACKS: Only render what is explicitly configured in resume.md
+const pageTitle = frontmatter.endpoint ?? frontmatter.pageTitle ?? frontmatter.headerTitle ?? (frontmatter.title?.startsWith('/') ? frontmatter.title : undefined);
+const pageSubtitle = frontmatter.subtitle ?? frontmatter.pageSubtitle ?? frontmatter.tagline ?? frontmatter.description;
+
+const name = frontmatter.name;
+const role = frontmatter.role ?? (frontmatter.title && !frontmatter.title.startsWith('/') ? frontmatter.title : undefined);
+
+// Contact items
+const rawContact = frontmatter.contact;
+let contactItems: string[] = [];
+if (Array.isArray(rawContact)) {
+  contactItems = rawContact.map(String);
+} else if (rawContact && typeof rawContact === 'object') {
+  contactItems = Object.values(rawContact).filter(Boolean).map(String);
+} else if (rawContact) {
+  contactItems = [String(rawContact)];
+}
+
+// Experience items
+const rawExperience = frontmatter.experience;
+const experience = Array.isArray(rawExperience) ? rawExperience : [];
+const experienceHeader = frontmatter.experienceHeader ?? "EXPERIENCE";
+
+// Education & Skills
+const education = frontmatter.education;
+const hasEducation = Boolean(education && (education.university || education.degree || education.focus));
+const focusText = Array.isArray(education?.focus) 
+  ? education.focus.join(', ') 
+  : (education?.focus ? String(education.focus) : null);
+
+const rawSkills = frontmatter.skills;
+const skills = Array.isArray(rawSkills) ? rawSkills : [];
+const hasSkills = skills.length > 0;
+
+const hasBodyContent = Boolean(resumeEntry?.rawContent?.()?.trim());
+
+const hasCompiledContent = Boolean(
+  name || 
+  role || 
+  contactItems.length > 0 || 
+  experience.length > 0 || 
+  hasEducation || 
+  hasSkills || 
+  hasBodyContent
+);
+
+// RAW JSON data: strip internal page header fields so it represents the clean CV data
+const {
+  endpoint: _ep,
+  pageTitle: _pt,
+  headerTitle: _ht,
+  subtitle: _st,
+  pageSubtitle: _pst,
+  tagline: _tg,
+  experienceHeader: _eh,
+  educationHeader: _edh,
+  skillsHeader: _sh,
+  educationSkillsHeader: _esh,
+  ...cleanResumeData
+} = frontmatter;
+
+const jsonPayload = Object.keys(cleanResumeData).length > 0 ? cleanResumeData : frontmatter;
+const rawJson = JSON.stringify(jsonPayload, null, 2);
 ---
 
-<Layout title="SYS_ARCHITECT | /etc/profile">
-  <ResumeView />
+<Layout title={pageTitle ? `SYS_ARCHITECT | ${pageTitle}` : (name ? `SYS_ARCHITECT | ${name}` : "SYS_ARCHITECT | Resume")}>
+  <div>
+    <div class="flex" style="justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+      <div>
+        {pageTitle && <h1 class="mono" style="margin: 0;">{pageTitle}</h1>}
+        {pageSubtitle && <p class="text-dim mt-2">{pageSubtitle}</p>}
+      </div>
+      <div class="flex gap-2">
+        <button id="btn-raw-view" class="active" type="button">RAW JSON</button>
+        <button id="btn-compiled-view" type="button">COMPILED HTML</button>
+      </div>
+    </div>
+
+    <!-- RAW JSON VIEW -->
+    <div id="panel-raw-view">
+      <pre class="mono" style="background: var(--bg); border: 1px solid var(--border); padding: 2rem; color: var(--fg); font-size: 0.9rem; overflow-x: auto;">{rawJson}</pre>
+    </div>
+
+    <!-- COMPILED HTML VIEW -->
+    <div id="panel-compiled-view" style="display: none;">
+      {hasCompiledContent && (
+        <div class="card" style="background: var(--bg);">
+          {(name || role) && (
+            <h1 style="border-bottom: 2px solid var(--border); padding-bottom: 1rem; margin-bottom: 1rem;">
+              {name}
+              {name && role && (
+                <span class="text-dim" style="font-weight: normal; font-size: 1.2rem;"> | {role}</span>
+              )}
+              {!name && role && (
+                <span class="text-dim" style="font-weight: normal; font-size: 1.2rem;">{role}</span>
+              )}
+            </h1>
+          )}
+
+          {contactItems.length > 0 && (
+            <div class="flex gap-4 mb-8" style="flex-wrap: wrap;">
+              {contactItems.map((item) => (
+                <span class="mono badge">{item}</span>
+              ))}
+            </div>
+          )}
+
+          {experience.length > 0 && (
+            <>
+              <h3 class="mono mb-4 text-dim">{experienceHeader}</h3>
+              <div class="flex" style="flex-direction: column; gap: 1.5rem; margin-bottom: 2.5rem;">
+                {experience.map((exp: any) => (
+                  <div>
+                    <div class="flex" style="justify-content: space-between; align-items: baseline;">
+                      <h4 style="margin: 0;">
+                        {exp.company && exp.role ? `${exp.company} — ${exp.role}` : (exp.company || exp.role)}
+                      </h4>
+                      {exp.years && <span class="mono text-dim" style="font-size: 0.85rem;">{exp.years}</span>}
+                    </div>
+                    {(exp.impact || exp.desc || exp.description) && (
+                      <p class="text-dim mt-2">{exp.impact || exp.desc || exp.description}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {(hasEducation || hasSkills) && (
+            <>
+              <h3 class="mono mb-4 text-dim">
+                {hasEducation && hasSkills ? 'EDUCATION & SKILLS' : (hasEducation ? 'EDUCATION' : 'SKILLS')}
+              </h3>
+              <div class={hasEducation && hasSkills ? "grid-2" : ""}>
+                {hasEducation && (
+                  <div>
+                    {education.university && <p><strong>{education.university}</strong></p>}
+                    {education.degree && <p class="text-dim">{education.degree}</p>}
+                    {focusText && <p class="text-dim">Focus: {focusText}</p>}
+                  </div>
+                )}
+                {hasSkills && (
+                  <div>
+                    <div class="flex gap-2" style="flex-wrap: wrap;">
+                      {skills.map((s: string) => (
+                        <span class="badge">{s}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {hasBodyContent && Content && (
+            <div class="text-dim mt-8" style="border-top: 1px solid var(--border); padding-top: 1.5rem;">
+              <Content />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  </div>
 </Layout>
+
+<script>
+  function setupResumeTabs() {
+    const btnRaw = document.getElementById('btn-raw-view');
+    const btnCompiled = document.getElementById('btn-compiled-view');
+    const panelRaw = document.getElementById('panel-raw-view');
+    const panelCompiled = document.getElementById('panel-compiled-view');
+
+    if (!btnRaw || !btnCompiled || !panelRaw || !panelCompiled) return;
+
+    btnRaw.onclick = function() {
+      btnRaw.classList.add('active');
+      btnCompiled.classList.remove('active');
+      panelRaw.style.display = 'block';
+      panelCompiled.style.display = 'none';
+    };
+
+    btnCompiled.onclick = function() {
+      btnCompiled.classList.add('active');
+      btnRaw.classList.remove('active');
+      panelRaw.style.display = 'none';
+      panelCompiled.style.display = 'block';
+    };
+  }
+
+  setupResumeTabs();
+  document.addEventListener('astro:after-swap', setupResumeTabs);
+</script>

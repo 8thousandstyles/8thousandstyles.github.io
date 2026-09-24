@@ -10,35 +10,43 @@ interface NoteFrontmatter {
   draft?: boolean;
 }
 
+// 1. Eagerly load notes top-level configuration from notes.md or notes/_index.md (these two only)
+const configFiles = import.meta.glob<any>([
+  '../../content/notes.md',
+  '../../content/notes/_index.md'
+], { eager: true });
+const configEntry = Object.values(configFiles)[0];
+const config = configEntry?.frontmatter || {};
+const Content = configEntry?.Content;
+const hasBodyContent = Boolean(configEntry?.rawContent?.()?.trim());
+
+// NO FALLBACKS: Only render what is explicitly configured in .md
+const pageTitle = config.title;
+const pageDescription = config.description;
+
+// 2. Read category-level metadata from <category>.md or <category>/_index.md (these two only)
 const rawNotes = import.meta.glob<any>('../../content/notes/**/*.md', { eager: true });
-
-// 1. Read top-level _index.md for Notes page title & description
-const topIndex = Object.entries(rawNotes).find(([path]) => path.endsWith('/notes/_index.md'))?.[1];
-const pageTitle = topIndex?.frontmatter?.title || "Notes";
-const pageDescription = topIndex?.frontmatter?.description || "Knowledge repository organized by domain: deep dives, algorithms, and architectural essays.";
-
-// 2. Read subfolder _index.md for each category
 const categoryMetaMap = new Map<string, { title?: string; description?: string }>();
+
 for (const [filepath, mod] of Object.entries(rawNotes)) {
-  const filename = filepath.split('/').pop() || '';
-  if (filename === '_index.md') {
-    const relPath = filepath.replace(/^.*\/content\/notes\//, '');
-    const parts = relPath.split('/');
-    if (parts.length === 2 && parts[1] === '_index.md') {
-      const cat = parts[0];
-      categoryMetaMap.set(cat, {
-        title: mod.frontmatter?.title,
-        description: mod.frontmatter?.description
-      });
-    }
+  const relPath = filepath.replace(/^.*\/content\/notes\//, '');
+  if (relPath === '_index.md' || relPath === 'notes.md') continue;
+  
+  const parts = relPath.split('/');
+  if (parts.length === 2 && parts[1] === '_index.md') {
+    const cat = parts[0];
+    categoryMetaMap.set(cat, {
+      title: mod.frontmatter?.title,
+      description: mod.frontmatter?.description
+    });
+  } else if (parts.length === 1 && parts[0].endsWith('.md')) {
+    const cat = parts[0].replace(/\.md$/, '');
+    categoryMetaMap.set(cat, {
+      title: mod.frontmatter?.title,
+      description: mod.frontmatter?.description
+    });
   }
 }
-
-const formatCategoryName = (cat: string) => {
-  if (cat.toLowerCase() === 'blogs') return 'Blogs';
-  if (cat.toLowerCase() === 'algorithms') return 'Algorithms';
-  return cat.charAt(0).toUpperCase() + cat.slice(1);
-};
 
 // 3. Group actual note posts by category subfolder (ignoring any file starting with '_')
 const categoriesMap = new Map<string, { count: number; posts: any[] }>();
@@ -50,6 +58,8 @@ for (const [filepath, post] of Object.entries(rawNotes)) {
   
   const relPath = filepath.replace(/^.*\/content\/notes\//, '').replace(/\.md$/, '');
   const parts = relPath.split('/');
+  if (parts.length < 2) continue; // Skip top-level category config files if any
+  
   const category = parts[0];
 
   if (!categoriesMap.has(category)) {
@@ -68,45 +78,57 @@ const categories = Array.from(categoriesMap.entries()).map(([key, data]) => {
   const subMeta = categoryMetaMap.get(key);
   return {
     key,
-    name: subMeta?.title || formatCategoryName(key),
-    description: subMeta?.description || `${formatCategoryName(key)} notes and technical writeups.`,
+    name: subMeta?.title || key,
+    description: subMeta?.description,
     count: data.count,
     posts: data.posts
   };
 });
 ---
 
-<Layout title={`SYS_ARCHITECT | ${pageTitle}`}>
+<Layout title={pageTitle ? `SYS_ARCHITECT | ${pageTitle}` : "SYS_ARCHITECT | Notes"}>
   <div>
-    <h1 class="mono">{pageTitle}</h1>
-    <p class="text-dim mb-4">
-      {pageDescription}
-    </p>
+    {pageTitle && <h1 class="mono">{pageTitle}</h1>}
+    {pageDescription && (
+      <p class="text-dim mb-4">
+        {pageDescription}
+      </p>
+    )}
+
+    {hasBodyContent && Content && (
+      <div class="card mb-8 text-dim home-prose">
+        <Content />
+      </div>
+    )}
 
     <!-- Categories Grid -->
-    <div class="flex" style="flex-direction: column; gap: 1.5rem; margin-bottom: 3rem;">
-      {categories.map((cat) => (
-        <a href={`/notes/${cat.key}`} class="card" style="text-decoration: none; display: block; transition: border-color 0.2s;">
-          <div class="flex" style="justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem;">
-            <div class="flex" style="align-items: center; gap: 0.75rem;">
-              <h2 class="mono" style="font-size: 1.25rem; margin: 0; color: var(--fg);">
-                /{cat.key}
-              </h2>
+    {categories.length > 0 && (
+      <div class="flex" style="flex-direction: column; gap: 1.5rem; margin-bottom: 3rem;">
+        {categories.map((cat) => (
+          <a href={`/notes/${cat.key}`} class="card" style="text-decoration: none; display: block; transition: border-color 0.2s;">
+            <div class="flex" style="justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem;">
+              <div class="flex" style="align-items: center; gap: 0.75rem;">
+                <h2 class="mono" style="font-size: 1.25rem; margin: 0; color: var(--fg);">
+                  /{cat.key}
+                </h2>
+              </div>
+              <span class="badge">
+                {cat.count} {cat.count === 1 ? 'ENTRY' : 'ENTRIES'}
+              </span>
             </div>
-            <span class="badge">
-              {cat.count} {cat.count === 1 ? 'ENTRY' : 'ENTRIES'}
-            </span>
-          </div>
 
-          <p class="text-dim mb-2" style="font-size: 0.9rem; margin-bottom: 0.75rem; line-height: 1.5;">
-            {cat.description}
-          </p>
+            {cat.description && (
+              <p class="text-dim mb-2" style="font-size: 0.9rem; margin-bottom: 0.75rem; line-height: 1.5;">
+                {cat.description}
+              </p>
+            )}
 
-          <div class="mono text-dim" style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
-            <span style="color: var(--accent);">Browse Category →</span>
-          </div>
-        </a>
-      ))}
-    </div>
+            <div class="mono text-dim" style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span style="color: var(--accent);">Browse Category →</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    )}
   </div>
 </Layout>

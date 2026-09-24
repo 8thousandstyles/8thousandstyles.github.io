@@ -8,19 +8,24 @@ export async function getStaticPaths() {
   const categoriesMap = new Map<string, any[]>();
   const categoryMetaMap = new Map<string, { title?: string; description?: string }>();
 
-  // 1. Scan for category _index.md files
+  // 1. Scan for category configuration files: <category>.md or <category>/_index.md (these two only)
   for (const [filepath, mod] of Object.entries(rawNotes)) {
-    const filename = filepath.split('/').pop() || '';
-    if (filename === '_index.md') {
-      const relPath = filepath.replace(/^.*\/content\/notes\//, '');
-      const parts = relPath.split('/');
-      if (parts.length === 2 && parts[1] === '_index.md') {
-        const cat = parts[0];
-        categoryMetaMap.set(cat, {
-          title: mod.frontmatter?.title,
-          description: mod.frontmatter?.description
-        });
-      }
+    const relPath = filepath.replace(/^.*\/content\/notes\//, '');
+    if (relPath === '_index.md' || relPath === 'notes.md') continue;
+
+    const parts = relPath.split('/');
+    if (parts.length === 2 && parts[1] === '_index.md') {
+      const cat = parts[0];
+      categoryMetaMap.set(cat, {
+        title: mod.frontmatter?.title,
+        description: mod.frontmatter?.description
+      });
+    } else if (parts.length === 1 && parts[0].endsWith('.md')) {
+      const cat = parts[0].replace(/\.md$/, '');
+      categoryMetaMap.set(cat, {
+        title: mod.frontmatter?.title,
+        description: mod.frontmatter?.description
+      });
     }
   }
 
@@ -33,6 +38,8 @@ export async function getStaticPaths() {
     // filepath example: ../../content/notes/blogs/allocator.md -> blogs/allocator
     const slugPath = filepath.replace(/^.*\/content\/notes\//, '').replace(/\.md$/, '');
     const parts = slugPath.split('/');
+    if (parts.length < 2) continue; // Skip category config file if named <cat>.md
+
     const category = parts[0];
 
     articles.push({ slugPath, category, post });
@@ -74,27 +81,16 @@ export async function getStaticPaths() {
   return [...categoryPaths, ...articlePaths];
 }
 
-const formatCategoryName = (cat: string) => {
-  if (cat.toLowerCase() === 'blogs') return 'Blogs';
-  if (cat.toLowerCase() === 'algorithms') return 'Algorithms';
-  return cat.charAt(0).toUpperCase() + cat.slice(1);
-};
-
-const defaultCategoryDescriptions: Record<string, string> = {
-  blogs: "Long-form writeups, architectural deep dives, and systems case studies.",
-  algorithms: "Computational complexity, graph theory, and applied cryptographic primitives.",
-};
-
 const { isCategory, category, categoryTitle, categoryDescription, posts, post } = Astro.props;
-const categoryDisplayName = categoryTitle || formatCategoryName(category);
-const currentCategoryDesc = categoryDescription || defaultCategoryDescriptions[category] || `Technical notes and entries under ${categoryDisplayName}.`;
+const categoryDisplayName = categoryTitle || category;
+const currentCategoryDesc = categoryDescription;
 
-// For articles: extract TOC headings and author
+// For articles: extract TOC headings and author (NO FALLBACK)
 let headings: any[] = [];
-let author = "0xguava";
+let author: string | undefined = undefined;
 
 if (!isCategory && post) {
-  author = post.frontmatter?.author || "0xguava";
+  author = post.frontmatter?.author;
   if (typeof post.getHeadings === 'function') {
     const rawHeadings = await post.getHeadings();
     headings = rawHeadings.filter((h: any) => h.depth >= 2 && h.depth <= 4);
@@ -114,21 +110,24 @@ if (!isCategory && post) {
         <span class="badge">{posts.length} {posts.length === 1 ? 'NOTE' : 'NOTES'}</span>
       </div>
 
-      <p class="text-dim mb-4">
-        {currentCategoryDesc}
-      </p>
+      {currentCategoryDesc && (
+        <p class="text-dim mb-4">
+          {currentCategoryDesc}
+        </p>
+      )}
 
       <div class="flex" style="flex-direction: column; gap: 2rem;">
         {posts.map((entry: any) => {
-          const { title, date, spec, description, tags } = entry.frontmatter;
+          const { title, date, spec, description, tags } = entry.frontmatter || {};
           const articleUrl = `/notes/${entry.slugPath}`;
+          const noteTitle = title || entry.slugPath.split('/').pop();
 
           return (
             <div class="card">
               <div class="flex" style="justify-content: space-between; align-items: baseline; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
                 <h2 class="mono" style="font-size: 1.2rem; margin: 0;">
                   <a href={articleUrl} class="project-title-link">
-                    {title || "Untitled Entry"}
+                    {noteTitle}
                   </a>
                 </h2>
                 <div class="flex gap-2" style="align-items: center;">
@@ -177,11 +176,13 @@ if (!isCategory && post) {
         </a>
 
         <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem;">
-          <h1 class="mono" style="font-size: 1.8rem; margin-bottom: 0.75rem;">
-            {post.frontmatter?.title || "Untitled Note"}
-          </h1>
+          {post.frontmatter?.title && (
+            <h1 class="mono" style="font-size: 1.8rem; margin-bottom: 0.75rem;">
+              {post.frontmatter.title}
+            </h1>
+          )}
           <div class="flex gap-4 mono text-dim" style="font-size: 0.8rem; align-items: center; flex-wrap: wrap;">
-            <span>AUTHOR: {author}</span>
+            {author && <span>AUTHOR: {author}</span>}
             {post.frontmatter?.date && <span>DATE: {post.frontmatter.date}</span>}
             {post.frontmatter?.spec && <span class="badge">{post.frontmatter.spec}</span>}
           </div>
