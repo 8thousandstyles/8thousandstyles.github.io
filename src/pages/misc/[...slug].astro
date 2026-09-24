@@ -2,7 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 
 export async function getStaticPaths() {
-  const rawNotes = import.meta.glob<any>('../../content/notes/**/*.md', { eager: true });
+  const rawMisc = import.meta.glob<any>('../../content/misc/**/*.md', { eager: true });
   
   const articles: { slugPath: string; category: string; post: any }[] = [];
   const categoriesMap = new Map<string, any[]>();
@@ -11,9 +11,9 @@ export async function getStaticPaths() {
   const draftCategories = new Set<string>();
 
   // 1. Scan for category configuration files: <category>.md or <category>/_index.md (these two only)
-  for (const [filepath, mod] of Object.entries(rawNotes)) {
-    const relPath = filepath.replace(/^.*\/content\/notes\//, '');
-    if (relPath === '_index.md' || relPath === 'notes.md') continue;
+  for (const [filepath, mod] of Object.entries(rawMisc)) {
+    const relPath = filepath.replace(/^.*\/content\/misc\//, '');
+    if (relPath === '_index.md' || relPath === 'misc.md') continue;
 
     const parts = relPath.split('/');
     if (parts.length === 2 && parts[1] === '_index.md') {
@@ -39,18 +39,19 @@ export async function getStaticPaths() {
     }
   }
 
+  // Initialize all known categories so empty categories still generate category pages
   for (const cat of categoryMetaMap.keys()) {
     categoriesMap.set(cat, []);
   }
 
   // 2. Scan for actual article posts (skip any file starting with '_')
-  for (const [filepath, post] of Object.entries(rawNotes)) {
+  for (const [filepath, post] of Object.entries(rawMisc)) {
     const filename = filepath.split('/').pop() || '';
     if (filename.startsWith('_')) continue;
     if (post.frontmatter?.draft) continue;
 
-    // filepath example: ../../content/notes/blogs/allocator.md -> blogs/allocator
-    const slugPath = filepath.replace(/^.*\/content\/notes\//, '').replace(/\.md$/, '');
+    // filepath example: ../../content/misc/blogs/allocator.md -> blogs/allocator
+    const slugPath = filepath.replace(/^.*\/content\/misc\//, '').replace(/\.md$/, '');
     const parts = slugPath.split('/');
     if (parts.length < 2) continue; // Skip category config file if named <cat>.md
 
@@ -68,7 +69,7 @@ export async function getStaticPaths() {
     });
   }
 
-  // 3. Category paths: /notes/:category (e.g. /notes/blogs, /notes/algorithms)
+  // 3. Category paths: /misc/:category (e.g. /misc/blogs, /misc/algorithms)
   const categoryPaths = Array.from(categoriesMap.entries()).map(([category, posts]) => {
     const meta = categoryMetaMap.get(category);
     return {
@@ -83,7 +84,7 @@ export async function getStaticPaths() {
     };
   });
 
-  // 4. Article paths: /notes/:category/:slug (e.g. /notes/blogs/allocator)
+  // 4. Article paths: /misc/:category/:slug (e.g. /misc/blogs/allocator)
   const articlePaths = articles.map(({ slugPath, category, post }) => ({
     params: { slug: slugPath },
     props: {
@@ -114,15 +115,15 @@ if (!isCategory && post) {
 ---
 
 {isCategory ? (
-  <Layout title={`Notes // ${categoryDisplayName} | SYS_ARCHITECT`}>
+  <Layout title={`Misc // ${categoryDisplayName} | SYS_ARCHITECT`}>
     <div>
-      <a href="/notes" class="mono text-dim" style="font-size: 0.85rem; display: inline-block; margin-bottom: 2rem;">
-        ← /notes
+      <a href="/misc" class="mono text-dim" style="font-size: 0.85rem; display: inline-block; margin-bottom: 2rem;">
+        ← /misc
       </a>
 
       <div class="flex" style="justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
         <h1 class="mono" style="margin: 0;">/{category}</h1>
-        <span class="badge">{posts.length} {posts.length === 1 ? 'NOTE' : 'NOTES'}</span>
+        <span class="badge">{posts.length} {posts.length === 1 ? 'ENTRY' : 'ENTRIES'}</span>
       </div>
 
       {currentCategoryDesc && (
@@ -133,8 +134,8 @@ if (!isCategory && post) {
 
       <div class="flex" style="flex-direction: column; gap: 2rem;">
         {posts.map((entry: any) => {
-          const { title, date, spec, description, tags } = entry.frontmatter || {};
-          const articleUrl = `/notes/${entry.slugPath}`;
+          const { title, date, description } = entry.frontmatter || {};
+          const articleUrl = `/misc/${entry.slugPath}`;
           const noteTitle = title || entry.slugPath.split('/').pop();
 
           return (
@@ -145,29 +146,13 @@ if (!isCategory && post) {
                     {noteTitle}
                   </a>
                 </h2>
-                <div class="flex gap-2" style="align-items: center;">
-                  {date && <span class="mono text-dim" style="font-size: 0.8rem;">{date}</span>}
-                  {spec && <span class="badge">{spec}</span>}
-                </div>
+                {date && <span class="mono text-dim" style="font-size: 0.8rem;">{date}</span>}
               </div>
 
               {description && (
                 <p class="text-dim" style="font-size: 0.95rem; margin-bottom: 0.75rem; line-height: 1.5;">
                   {description}
                 </p>
-              )}
-
-              {tags && tags.length > 0 && (
-                <div class="flex mono" style="gap: 0.75rem; font-size: 0.75rem; margin-top: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
-                  {tags.map((t: string) => {
-                    const tagText = t.startsWith('#') ? t : `#${t}`;
-                    return (
-                      <span style="color: var(--fg-dim); opacity: 0.8;">
-                        {tagText}
-                      </span>
-                    );
-                  })}
-                </div>
               )}
 
               <div class="mono" style="border-top: 1px solid var(--border); padding-top: 0.75rem; margin-top: 1rem; font-size: 0.8rem;">
@@ -186,8 +171,8 @@ if (!isCategory && post) {
     <div class="article-layout">
       <!-- Main Content Column -->
       <div class="article-main">
-        <a href={`/notes/${category}`} class="mono text-dim" style="font-size: 0.85rem; display: inline-block; margin-bottom: 2rem;">
-          ← /notes/{category}
+        <a href={`/misc/${category}`} class="mono text-dim" style="font-size: 0.85rem; display: inline-block; margin-bottom: 2rem;">
+          ← /misc/{category}
         </a>
 
         <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem;">
@@ -199,17 +184,7 @@ if (!isCategory && post) {
           <div class="flex gap-4 mono text-dim" style="font-size: 0.8rem; align-items: center; flex-wrap: wrap;">
             {author && <span>AUTHOR: {author}</span>}
             {post.frontmatter?.date && <span>DATE: {post.frontmatter.date}</span>}
-            {post.frontmatter?.spec && <span class="badge">{post.frontmatter.spec}</span>}
           </div>
-          {post.frontmatter?.tags && post.frontmatter.tags.length > 0 && (
-            <div class="flex mono" style="gap: 0.75rem; font-size: 0.75rem; margin-top: 0.75rem; flex-wrap: wrap;">
-              {post.frontmatter.tags.map((t: string) => (
-                <span style="color: var(--fg-dim); opacity: 0.8;">
-                  {t.startsWith('#') ? t : `#${t}`}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
 
         <div class="blog-article-content text-dim">

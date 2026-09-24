@@ -4,16 +4,15 @@ import Layout from '../../layouts/Layout.astro';
 interface NoteFrontmatter {
   title?: string;
   date?: string;
-  spec?: string;
   description?: string;
   tags?: string[];
   draft?: boolean;
 }
 
-// 1. Eagerly load notes top-level configuration from notes.md or notes/_index.md (these two only)
+// 1. Eagerly load misc top-level configuration from misc.md or misc/_index.md (these two only)
 const configFiles = import.meta.glob<any>([
-  '../../content/notes.md',
-  '../../content/notes/_index.md'
+  '../../content/misc.md',
+  '../../content/misc/_index.md'
 ], { eager: true });
 const configEntry = Object.values(configFiles)[0];
 const config = configEntry?.frontmatter || {};
@@ -25,13 +24,13 @@ const pageTitle = config.title;
 const pageDescription = config.description;
 
 // 2. Read category-level metadata from <category>.md or <category>/_index.md (these two only)
-const rawNotes = import.meta.glob<any>('../../content/notes/**/*.md', { eager: true });
+const rawMisc = import.meta.glob<any>('../../content/misc/**/*.md', { eager: true });
 const categoryMetaMap = new Map<string, { title?: string; description?: string }>();
 const draftCategories = new Set<string>();
 
-for (const [filepath, mod] of Object.entries(rawNotes)) {
-  const relPath = filepath.replace(/^.*\/content\/notes\//, '');
-  if (relPath === '_index.md' || relPath === 'notes.md') continue;
+for (const [filepath, mod] of Object.entries(rawMisc)) {
+  const relPath = filepath.replace(/^.*\/content\/misc\//, '');
+  if (relPath === '_index.md' || relPath === 'misc.md') continue;
   
   const parts = relPath.split('/');
   if (parts.length === 2 && parts[1] === '_index.md') {
@@ -64,12 +63,12 @@ for (const cat of categoryMetaMap.keys()) {
   categoriesMap.set(cat, { count: 0, posts: [] });
 }
 
-for (const [filepath, post] of Object.entries(rawNotes)) {
+for (const [filepath, post] of Object.entries(rawMisc)) {
   const filename = filepath.split('/').pop() || '';
   if (filename.startsWith('_')) continue;
   if (post.frontmatter?.draft) continue;
   
-  const relPath = filepath.replace(/^.*\/content\/notes\//, '').replace(/\.md$/, '');
+  const relPath = filepath.replace(/^.*\/content\/misc\//, '').replace(/\.md$/, '');
   const parts = relPath.split('/');
   if (parts.length < 2) continue; // Skip top-level category config files if any
   
@@ -98,9 +97,18 @@ const categories = Array.from(categoriesMap.entries()).map(([key, data]) => {
     posts: data.posts
   };
 });
+
+function renderMarkdownLinks(text: string): string {
+  if (!text) return '';
+  return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, linkText, url) => {
+    const isExternal = url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//');
+    const targetRel = isExternal ? ' target="_blank" rel="noreferrer"' : '';
+    return `<a href="${url}"${targetRel}>${linkText}</a>`;
+  });
+}
 ---
 
-<Layout title={pageTitle ? `SYS_ARCHITECT | ${pageTitle}` : "SYS_ARCHITECT | Notes"}>
+<Layout title={pageTitle ? `SYS_ARCHITECT | ${pageTitle}` : "SYS_ARCHITECT | Misc"}>
   <div>
     {pageTitle && <h1 class="mono">{pageTitle}</h1>}
     {pageDescription && (
@@ -115,34 +123,65 @@ const categories = Array.from(categoriesMap.entries()).map(([key, data]) => {
       </div>
     )}
 
-    <!-- Categories Grid -->
+    <!-- Categories Grid (Styled like home page focusAreas with subtle distinctions) -->
     {categories.length > 0 && (
-      <div class="flex" style="flex-direction: column; gap: 1.5rem; margin-bottom: 3rem;">
-        {categories.map((cat) => (
-          <a href={`/notes/${cat.key}`} class="card" style="text-decoration: none; display: block; transition: border-color 0.2s;">
-            <div class="flex" style="justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem;">
-              <div class="flex" style="align-items: center; gap: 0.75rem;">
-                <h2 class="mono" style="font-size: 1.25rem; margin: 0; color: var(--fg);">
-                  /{cat.key}
-                </h2>
-              </div>
-              <span class="badge">
-                {cat.count} {cat.count === 1 ? 'ENTRY' : 'ENTRIES'}
-              </span>
-            </div>
+      <div class="grid-2 mt-8">
+        {categories.map((cat) => {
+          const descHtml = renderMarkdownLinks(cat.description || '');
+          return (
+            <a href={`/misc/${cat.key}`} class="misc-category-item">
+              <h3 class="mono misc-cat-title" style="margin: 0 0 0.4rem 0; font-size: 1.15rem;">
+                /{cat.key}
+                <span class="misc-arrow">→</span>
+              </h3>
 
-            {cat.description && (
-              <p class="text-dim mb-2" style="font-size: 0.9rem; margin-bottom: 0.75rem; line-height: 1.5;">
-                {cat.description}
-              </p>
-            )}
-
-            <div class="mono text-dim" style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
-              <span style="color: var(--accent);">Browse Category →</span>
-            </div>
-          </a>
-        ))}
+              {descHtml && (
+                <p class="text-dim focus-area-desc" style="font-size: 0.9rem; line-height: 1.6; margin: 0;" set:html={descHtml} />
+              )}
+            </a>
+          );
+        })}
       </div>
     )}
   </div>
 </Layout>
+
+<style>
+  .misc-category-item {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    border-left: 2px solid var(--border);
+    padding: 0.5rem 0 0.5rem 1.25rem;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .misc-category-item:hover {
+    border-left-color: var(--accent);
+  }
+
+  .misc-cat-title {
+    color: var(--fg);
+    transition: color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .misc-category-item:hover .misc-cat-title {
+    color: var(--accent);
+  }
+
+  .misc-arrow {
+    display: inline-block;
+    color: var(--accent);
+    font-size: 0.95rem;
+    opacity: 0.7;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  .misc-category-item:hover .misc-arrow {
+    transform: translateX(4px);
+    opacity: 1;
+  }
+</style>

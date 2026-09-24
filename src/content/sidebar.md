@@ -5,10 +5,12 @@ navHeader: "Panels"
 nav:
   - title: "Home"
     path: "/home"
-  - title: "Projects"
-    path: "/projects"
   - title: "Notes"
     path: "/notes"
+  - title: "Projects"
+    path: "/projects"
+  - title: "Misc"
+    path: "/misc"
 themeToggle:
   enabled: true
   label: "Toggle Theme"

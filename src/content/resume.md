@@ -1,6 +1,6 @@
 ---
-endpoint: "/etc/profile"
-subtitle: "Curriculum Vitae data source."
+endpoint: "Resume / CV"
+subtitle: "Curriculum Vitae."
 name: "Alex Chen"
 title: "Systems Architect & HPC Researcher"
 contact:

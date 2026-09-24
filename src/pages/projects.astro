@@ -113,23 +113,10 @@ const resolveBlogUrl = (blog?: string) => {
                 </div>
               )}
 
-              {hasTags && (
-                <div class="flex mono" style="gap: 0.75rem; font-size: 0.75rem; margin-top: 1.25rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
-                  {tags.map((t: string) => {
-                    const tagText = t.startsWith('#') ? t : `#${t}`;
-                    return (
-                      <span style="color: var(--fg-dim); opacity: 0.8;">
-                        {tagText}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
-
               {hasFooter && (
                 <div 
                   class="flex gap-2 mono" 
-                  style={`font-size: 0.8rem; border-top: 1px solid var(--border); padding-top: 0.75rem; flex-wrap: wrap; align-items: center; ${!hasTags ? 'margin-top: 1.25rem;' : ''}`}
+                  style="font-size: 0.8rem; border-top: 1px solid var(--border); padding-top: 0.75rem; flex-wrap: wrap; align-items: center; margin-top: 1.25rem;"
                 >
                   {github && (
                     <a href={github} target="_blank" rel="noreferrer" class="badge tag-link">
