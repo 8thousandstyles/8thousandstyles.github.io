@@ -1,120 +1,145 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import PicturesView from '../../components/misc/PicturesView.astro';
 
 export async function getStaticPaths() {
   const rawMisc = import.meta.glob<any>('../../content/misc/**/*.md', { eager: true });
   
-  const articles: { slugPath: string; category: string; post: any }[] = [];
-  const categoriesMap = new Map<string, any[]>();
-  const categoryMetaMap = new Map<string, { title?: string; description?: string }>();
-
   const draftCategories = new Set<string>();
+  const categoryMetaMap = new Map<string, { title?: string; description?: string; mod: any }>();
+  const essaysArticles: { slugPath: string; post: any }[] = [];
 
-  // 1. Scan for category configuration files: <category>.md or <category>/_index.md (these two only)
+  // Pass 1: Identify draft categories
   for (const [filepath, mod] of Object.entries(rawMisc)) {
     const relPath = filepath.replace(/^.*\/content\/misc\//, '');
     if (relPath === '_index.md' || relPath === 'misc.md') continue;
 
     const parts = relPath.split('/');
     if (parts.length === 2 && parts[1] === '_index.md') {
-      const cat = parts[0];
       if (mod.frontmatter?.draft === true) {
-        draftCategories.add(cat);
-        continue;
+        draftCategories.add(parts[0]);
       }
-      categoryMetaMap.set(cat, {
-        title: mod.frontmatter?.title,
-        description: mod.frontmatter?.description
-      });
+    } else if (parts.length === 1 && parts[0].endsWith('.md')) {
+      if (mod.frontmatter?.draft === true) {
+        draftCategories.add(parts[0].replace(/\.md$/, ''));
+      }
+    }
+  }
+
+  // Pass 2: Collect category modules and essay articles
+  for (const [filepath, mod] of Object.entries(rawMisc)) {
+    const relPath = filepath.replace(/^.*\/content\/misc\//, '');
+    if (relPath === '_index.md' || relPath === 'misc.md') continue;
+
+    const parts = relPath.split('/');
+
+    // Category definition files: <cat>/_index.md or <cat>.md
+    if (parts.length === 2 && parts[1] === '_index.md') {
+      const cat = parts[0];
+      if (!draftCategories.has(cat)) {
+        categoryMetaMap.set(cat, {
+          title: mod.frontmatter?.title,
+          description: mod.frontmatter?.description,
+          mod
+        });
+      }
     } else if (parts.length === 1 && parts[0].endsWith('.md')) {
       const cat = parts[0].replace(/\.md$/, '');
-      if (mod.frontmatter?.draft === true) {
-        draftCategories.add(cat);
-        continue;
+      if (!draftCategories.has(cat)) {
+        categoryMetaMap.set(cat, {
+          title: mod.frontmatter?.title,
+          description: mod.frontmatter?.description,
+          mod
+        });
       }
-      categoryMetaMap.set(cat, {
-        title: mod.frontmatter?.title,
-        description: mod.frontmatter?.description
-      });
+    } else if (parts.length === 2 && parts[0] === 'essays') {
+      // Sub-article inside essays: essays/<slug>.md
+      const filename = parts[1];
+      if (!filename.startsWith('_') && !mod.frontmatter?.draft && !draftCategories.has('essays')) {
+        const slugPath = relPath.replace(/\.md$/, '');
+        essaysArticles.push({ slugPath, post: mod });
+      }
     }
   }
 
-  // Initialize all known categories so empty categories still generate category pages
-  for (const cat of categoryMetaMap.keys()) {
-    categoriesMap.set(cat, []);
-  }
+  const paths: any[] = [];
 
-  // 2. Scan for actual article posts (skip any file starting with '_')
-  for (const [filepath, post] of Object.entries(rawMisc)) {
-    const filename = filepath.split('/').pop() || '';
-    if (filename.startsWith('_')) continue;
-    if (post.frontmatter?.draft) continue;
-
-    // filepath example: ../../content/misc/blogs/allocator.md -> blogs/allocator
-    const slugPath = filepath.replace(/^.*\/content\/misc\//, '').replace(/\.md$/, '');
-    const parts = slugPath.split('/');
-    if (parts.length < 2) continue; // Skip category config file if named <cat>.md
-
-    const category = parts[0];
-    if (draftCategories.has(category)) continue;
-
-    articles.push({ slugPath, category, post });
-
-    if (!categoriesMap.has(category)) {
-      categoriesMap.set(category, []);
-    }
-    categoriesMap.get(category)!.push({
-      slugPath,
-      ...post
+  // Route 1: essays index (if not draft)
+  if (categoryMetaMap.has('essays')) {
+    const essaysCat = categoryMetaMap.get('essays')!;
+    paths.push({
+      params: { slug: 'essays' },
+      props: {
+        pageType: 'essays-index',
+        category: 'essays',
+        categoryTitle: essaysCat.title,
+        categoryDescription: essaysCat.description,
+        categoryMod: essaysCat.mod,
+        posts: essaysArticles
+      }
     });
   }
 
-  // 3. Category paths: /misc/:category (e.g. /misc/blogs, /misc/algorithms)
-  const categoryPaths = Array.from(categoriesMap.entries()).map(([category, posts]) => {
-    const meta = categoryMetaMap.get(category);
-    return {
+  // Route 2: essays articles (essays/:slug)
+  for (const { slugPath, post } of essaysArticles) {
+    paths.push({
+      params: { slug: slugPath },
+      props: {
+        pageType: 'essay-article',
+        category: 'essays',
+        post
+      }
+    });
+  }
+
+  // Route 3: all other direct category content pages (pictures, music, yt, art, anime, etc.)
+  for (const [category, { title, description, mod }] of categoryMetaMap.entries()) {
+    if (category === 'essays') continue; // Handled as listing
+    paths.push({
       params: { slug: category },
       props: {
-        isCategory: true,
+        pageType: 'category-content',
         category,
-        categoryTitle: meta?.title,
-        categoryDescription: meta?.description,
-        posts
+        categoryTitle: title,
+        categoryDescription: description,
+        categoryMod: mod
       }
-    };
-  });
+    });
+  }
 
-  // 4. Article paths: /misc/:category/:slug (e.g. /misc/blogs/allocator)
-  const articlePaths = articles.map(({ slugPath, category, post }) => ({
-    params: { slug: slugPath },
-    props: {
-      isCategory: false,
-      category,
-      post
-    }
-  }));
-
-  return [...categoryPaths, ...articlePaths];
+  return paths;
 }
 
-const { isCategory, category, categoryTitle, categoryDescription, posts, post } = Astro.props;
+const {
+  pageType,
+  category,
+  categoryTitle,
+  categoryDescription,
+  categoryMod,
+  posts,
+  post
+} = Astro.props;
+
 const categoryDisplayName = categoryTitle || category;
 const currentCategoryDesc = categoryDescription;
 
-// For articles: extract TOC headings and author (NO FALLBACK)
+// For essay articles: extract TOC headings and author
 let headings: any[] = [];
 let author: string | undefined = undefined;
 
-if (!isCategory && post) {
+if (pageType === 'essay-article' && post) {
   author = post.frontmatter?.author;
   if (typeof post.getHeadings === 'function') {
     const rawHeadings = await post.getHeadings();
     headings = rawHeadings.filter((h: any) => h.depth >= 2 && h.depth <= 4);
   }
 }
+
+const CategoryContent = categoryMod?.Content;
+const hasCategoryBody = Boolean(categoryMod?.rawContent?.()?.trim());
 ---
 
-{isCategory ? (
+{pageType === 'essays-index' && (
   <Layout title={`Misc // ${categoryDisplayName} | SYS_ARCHITECT`}>
     <div>
       <a href="/misc" class="mono text-dim" style="font-size: 0.85rem; display: inline-block; margin-bottom: 2rem;">
@@ -123,7 +148,7 @@ if (!isCategory && post) {
 
       <div class="flex" style="justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
         <h1 class="mono" style="margin: 0;">/{category}</h1>
-        <span class="badge">{posts.length} {posts.length === 1 ? 'ENTRY' : 'ENTRIES'}</span>
+        <span class="badge">{posts.length} {posts.length === 1 ? 'ESSAY' : 'ESSAYS'}</span>
       </div>
 
       {currentCategoryDesc && (
@@ -132,9 +157,15 @@ if (!isCategory && post) {
         </p>
       )}
 
+      {hasCategoryBody && CategoryContent && (
+        <div class="card mb-8 text-dim home-prose">
+          <CategoryContent />
+        </div>
+      )}
+
       <div class="flex" style="flex-direction: column; gap: 2rem;">
         {posts.map((entry: any) => {
-          const { title, date, description } = entry.frontmatter || {};
+          const { title, date, description, readingTime } = entry.post.frontmatter || {};
           const articleUrl = `/misc/${entry.slugPath}`;
           const noteTitle = title || entry.slugPath.split('/').pop();
 
@@ -146,7 +177,10 @@ if (!isCategory && post) {
                     {noteTitle}
                   </a>
                 </h2>
-                {date && <span class="mono text-dim" style="font-size: 0.8rem;">{date}</span>}
+                <div class="flex gap-2" style="align-items: center;">
+                  {date && <span class="mono text-dim" style="font-size: 0.8rem;">{date}</span>}
+                  {readingTime && <span class="badge">{readingTime}</span>}
+                </div>
               </div>
 
               {description && (
@@ -157,7 +191,7 @@ if (!isCategory && post) {
 
               <div class="mono" style="border-top: 1px solid var(--border); padding-top: 0.75rem; margin-top: 1rem; font-size: 0.8rem;">
                 <a href={articleUrl} class="tag-link badge">
-                  Read Article →
+                  Read →
                 </a>
               </div>
             </div>
@@ -166,8 +200,39 @@ if (!isCategory && post) {
       </div>
     </div>
   </Layout>
-) : (
-  <Layout title={`${post.frontmatter?.title || 'Note'} | SYS_ARCHITECT`}>
+)}
+
+{pageType === 'category-content' && (
+  <Layout title={`${categoryDisplayName} | SYS_ARCHITECT`}>
+    <div>
+      <a href="/misc" class="mono text-dim" style="font-size: 0.85rem; display: inline-block; margin-bottom: 2rem;">
+        ← /misc
+      </a>
+
+      <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem;">
+        <h1 class="mono" style="font-size: 1.8rem; margin-bottom: 0.5rem;">
+          /{category}
+        </h1>
+        {currentCategoryDesc && (
+          <p class="text-dim" style="font-size: 1rem; line-height: 1.6; margin-bottom: 0.75rem;">
+            {currentCategoryDesc}
+          </p>
+        )}
+      </div>
+
+      {category === 'pictures' ? (
+        <PicturesView frontmatter={categoryMod?.frontmatter} Content={CategoryContent} />
+      ) : (
+        <div class="blog-article-content text-dim">
+          {CategoryContent && <CategoryContent />}
+        </div>
+      )}
+    </div>
+  </Layout>
+)}
+
+{pageType === 'essay-article' && (
+  <Layout title={`${post.frontmatter?.title || 'Essay'} | SYS_ARCHITECT`}>
     <div class="article-layout">
       <!-- Main Content Column -->
       <div class="article-main">
@@ -184,6 +249,7 @@ if (!isCategory && post) {
           <div class="flex gap-4 mono text-dim" style="font-size: 0.8rem; align-items: center; flex-wrap: wrap;">
             {author && <span>AUTHOR: {author}</span>}
             {post.frontmatter?.date && <span>DATE: {post.frontmatter.date}</span>}
+            {post.frontmatter?.readingTime && <span class="badge">{post.frontmatter.readingTime}</span>}
           </div>
         </div>
 
@@ -263,11 +329,9 @@ if (!isCategory && post) {
       const triggerOffset = 160;
       let activeSlug = '';
 
-      // Check if user reached absolute bottom of page
       const isAtBottom = (window.innerHeight + window.scrollY) >= (document.documentElement.scrollHeight - 25);
 
       if (isAtBottom) {
-        // Find the lowest heading currently visible in viewport
         for (let i = headings.length - 1; i >= 0; i--) {
           if (headings[i].getBoundingClientRect().top < window.innerHeight) {
             activeSlug = headings[i].id;
@@ -275,7 +339,6 @@ if (!isCategory && post) {
           }
         }
       } else {
-        // Standard progression: last heading whose top has crossed the triggerOffset
         for (let i = 0; i < headings.length; i++) {
           const rect = headings[i].getBoundingClientRect();
           if (rect.top <= triggerOffset) {
@@ -302,7 +365,6 @@ if (!isCategory && post) {
       }
     }
 
-    // 1. Make Article Headings Clickable
     headings.forEach((h) => {
       h.addEventListener('click', () => {
         if (!h.id) return;
@@ -317,7 +379,6 @@ if (!isCategory && post) {
       });
     });
 
-    // 2. Clickable TOC links immediately update highlight
     tocLinks.forEach((link) => {
       link.addEventListener('click', () => {
         const slug = link.getAttribute('data-heading') || link.getAttribute('href')?.replace('#', '');
@@ -334,7 +395,6 @@ if (!isCategory && post) {
 
     window.addEventListener('scroll', onScroll, { passive: true });
     
-    // Initial check (if arriving with hash in URL, or from top)
     const initialHash = window.location.hash.replace('#', '');
     if (initialHash && headings.some(h => h.id === initialHash)) {
       applyActiveHighlight(initialHash);

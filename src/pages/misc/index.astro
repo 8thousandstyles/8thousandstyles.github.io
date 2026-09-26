@@ -5,7 +5,6 @@ interface NoteFrontmatter {
   title?: string;
   date?: string;
   description?: string;
-  tags?: string[];
   draft?: boolean;
 }
 
@@ -28,27 +27,37 @@ const rawMisc = import.meta.glob<any>('../../content/misc/**/*.md', { eager: tru
 const categoryMetaMap = new Map<string, { title?: string; description?: string }>();
 const draftCategories = new Set<string>();
 
+// Pass 1: Identify draft categories
 for (const [filepath, mod] of Object.entries(rawMisc)) {
   const relPath = filepath.replace(/^.*\/content\/misc\//, '');
   if (relPath === '_index.md' || relPath === 'misc.md') continue;
-  
+
   const parts = relPath.split('/');
   if (parts.length === 2 && parts[1] === '_index.md') {
-    const cat = parts[0];
     if (mod.frontmatter?.draft === true) {
-      draftCategories.add(cat);
-      continue;
+      draftCategories.add(parts[0]);
     }
-    categoryMetaMap.set(cat, {
-      title: mod.frontmatter?.title,
-      description: mod.frontmatter?.description
-    });
   } else if (parts.length === 1 && parts[0].endsWith('.md')) {
-    const cat = parts[0].replace(/\.md$/, '');
     if (mod.frontmatter?.draft === true) {
-      draftCategories.add(cat);
-      continue;
+      draftCategories.add(parts[0].replace(/\.md$/, ''));
     }
+  }
+}
+
+// Pass 2: Collect active (non-draft) categories
+for (const [filepath, mod] of Object.entries(rawMisc)) {
+  const relPath = filepath.replace(/^.*\/content\/misc\//, '');
+  if (relPath === '_index.md' || relPath === 'misc.md') continue;
+
+  const parts = relPath.split('/');
+  let cat = '';
+  if (parts.length === 2 && parts[1] === '_index.md') {
+    cat = parts[0];
+  } else if (parts.length === 1 && parts[0].endsWith('.md')) {
+    cat = parts[0].replace(/\.md$/, '');
+  }
+
+  if (cat && !draftCategories.has(cat)) {
     categoryMetaMap.set(cat, {
       title: mod.frontmatter?.title,
       description: mod.frontmatter?.description
@@ -56,45 +65,11 @@ for (const [filepath, mod] of Object.entries(rawMisc)) {
   }
 }
 
-// 3. Group actual note posts by category subfolder (ignoring any file starting with '_')
-const categoriesMap = new Map<string, { count: number; posts: any[] }>();
-
-for (const cat of categoryMetaMap.keys()) {
-  categoriesMap.set(cat, { count: 0, posts: [] });
-}
-
-for (const [filepath, post] of Object.entries(rawMisc)) {
-  const filename = filepath.split('/').pop() || '';
-  if (filename.startsWith('_')) continue;
-  if (post.frontmatter?.draft) continue;
-  
-  const relPath = filepath.replace(/^.*\/content\/misc\//, '').replace(/\.md$/, '');
-  const parts = relPath.split('/');
-  if (parts.length < 2) continue; // Skip top-level category config files if any
-  
-  const category = parts[0];
-  if (draftCategories.has(category)) continue;
-
-  if (!categoriesMap.has(category)) {
-    categoriesMap.set(category, { count: 0, posts: [] });
-  }
-
-  const catData = categoriesMap.get(category)!;
-  catData.count += 1;
-  catData.posts.push({
-    slugPath: relPath,
-    ...post
-  });
-}
-
-const categories = Array.from(categoriesMap.entries()).map(([key, data]) => {
-  const subMeta = categoryMetaMap.get(key);
+const categories = Array.from(categoryMetaMap.entries()).map(([key, data]) => {
   return {
     key,
-    name: subMeta?.title || key,
-    description: subMeta?.description,
-    count: data.count,
-    posts: data.posts
+    name: data.title || key,
+    description: data.description,
   };
 });
 

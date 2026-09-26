@@ -1,0 +1,480 @@
+---
+interface PhotoItem {
+  url?: string;
+  src?: string;
+  image?: string;
+  title?: string;
+  location?: string;
+  camera?: string;
+  lens?: string;
+  film?: string;
+  iso?: string | number;
+  shutter?: string;
+  aperture?: string;
+  date?: string;
+}
+
+interface Props {
+  frontmatter?: any;
+  Content?: any;
+}
+
+const { frontmatter = {}, Content } = Astro.props;
+
+const rawPhotos = frontmatter.photos || frontmatter.gallery || frontmatter.images || [];
+const photos: PhotoItem[] = Array.isArray(rawPhotos)
+  ? rawPhotos.map((p: any) => typeof p === 'string' ? { url: p } : p)
+  : (frontmatter.image ? [{
+      url: frontmatter.image,
+      title: frontmatter.title,
+      camera: frontmatter.camera,
+      lens: frontmatter.lens,
+      film: frontmatter.film,
+      iso: frontmatter.iso,
+      shutter: frontmatter.shutter,
+      aperture: frontmatter.aperture,
+      location: frontmatter.location,
+      date: frontmatter.date
+    }] : []);
+---
+
+<div class="pictures-container">
+  {photos && photos.length > 0 && (
+    <div class="pictures-grid">
+      {photos.map((photo, index) => {
+        const photoUrl = photo.url || photo.src || photo.image;
+        if (!photoUrl) return null;
+
+        const specs = [
+          photo.camera,
+          photo.lens,
+          photo.film,
+          photo.iso ? `ISO ${photo.iso}` : null,
+          photo.location
+        ].filter(Boolean);
+
+        return (
+          <article 
+            class="photo-card card" 
+            data-photo-index={index}
+            data-url={photoUrl}
+            data-title={photo.title || ''}
+            data-camera={photo.camera || ''}
+            data-lens={photo.lens || ''}
+            data-film={photo.film || ''}
+            data-iso={photo.iso ? `ISO ${photo.iso}` : ''}
+            data-location={photo.location || ''}
+            data-date={photo.date || ''}
+            tabindex="0"
+            role="button"
+            aria-label={`View photo ${photo.title || index + 1} in lightbox`}
+          >
+            <div class="photo-frame">
+              <img 
+                src={photoUrl} 
+                alt={photo.title || 'Architectural capture'} 
+                loading="lazy" 
+                decoding="async" 
+              />
+              <div class="photo-overlay">
+                <span class="mono photo-inspect-tag">[ Expand ↗ ]</span>
+              </div>
+            </div>
+
+            <div class="photo-info">
+              <div class="flex" style="justify-content: space-between; align-items: baseline; gap: 0.5rem; flex-wrap: wrap;">
+                {photo.title && (
+                  <h3 class="mono photo-title">{photo.title}</h3>
+                )}
+                {photo.date && (
+                  <span class="mono text-dim" style="font-size: 0.78rem;">{photo.date}</span>
+                )}
+              </div>
+
+              {specs.length > 0 && (
+                <div class="photo-specs mono">
+                  {specs.map((spec) => (
+                    <span class="badge photo-spec-badge">{spec}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  )}
+
+  {Content && (
+    <div class="blog-article-content text-dim mt-8">
+      <Content />
+    </div>
+  )}
+
+  <!-- Native HTML5 Lightbox Dialog -->
+  <dialog id="photo-lightbox" class="photo-lightbox">
+    <div class="lightbox-dialog-inner">
+      <div class="lightbox-top-bar">
+        <span id="lightbox-counter" class="mono text-dim" style="font-size: 0.8rem;"></span>
+        <button id="lightbox-close-btn" type="button" class="mono lightbox-close-btn">
+          [ ESC / CLOSE ]
+        </button>
+      </div>
+
+      <div class="lightbox-stage">
+        <button id="lightbox-prev-btn" type="button" class="lightbox-nav-btn prev" aria-label="Previous photo">
+          ‹
+        </button>
+
+        <div class="lightbox-media-wrapper">
+          <img id="lightbox-img" src="" alt="" />
+        </div>
+
+        <button id="lightbox-next-btn" type="button" class="lightbox-nav-btn next" aria-label="Next photo">
+          ›
+        </button>
+      </div>
+
+      <div class="lightbox-meta-bar">
+        <h4 id="lightbox-title" class="mono" style="font-size: 1.1rem; margin: 0 0 0.5rem 0;"></h4>
+        <div id="lightbox-specs" class="mono text-dim" style="font-size: 0.82rem; display: flex; gap: 0.5rem; flex-wrap: wrap;"></div>
+      </div>
+    </div>
+  </dialog>
+</div>
+
+<style>
+  .pictures-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.75rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .photo-card {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .photo-card:hover, .photo-card:focus-visible {
+    border-color: var(--accent);
+    outline: none;
+    transform: translateY(-2px);
+  }
+
+  .photo-frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: #080808;
+  }
+
+  .photo-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.35s ease, filter 0.35s ease;
+  }
+
+  .photo-card:hover .photo-frame img {
+    transform: scale(1.03);
+  }
+
+  .photo-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .photo-card:hover .photo-overlay {
+    opacity: 1;
+  }
+
+  .photo-inspect-tag {
+    color: #ffffff;
+    font-size: 0.85rem;
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid var(--border);
+    padding: 0.35rem 0.75rem;
+    border-radius: 2px;
+  }
+
+  .photo-info {
+    padding: 1rem 1.25rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .photo-title {
+    font-size: 1rem;
+    margin: 0;
+    color: var(--fg);
+  }
+
+  .photo-specs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.25rem;
+  }
+
+  .photo-spec-badge {
+    font-size: 0.72rem;
+    padding: 0.1rem 0.4rem;
+    color: var(--fg-dim);
+    border-color: var(--border);
+  }
+
+  /* Lightbox Dialog */
+  .photo-lightbox {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    max-height: none;
+    background: rgba(0, 0, 0, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: none;
+    padding: 1.5rem;
+    margin: 0;
+    color: var(--fg);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .photo-lightbox[open] {
+    display: flex;
+  }
+
+  .photo-lightbox::backdrop {
+    background: transparent;
+  }
+
+  .lightbox-dialog-inner {
+    width: 100%;
+    max-width: 1100px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .lightbox-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.75rem;
+  }
+
+  .lightbox-close-btn {
+    background: transparent;
+    color: var(--fg-dim);
+    border: 1px solid var(--border);
+    padding: 0.35rem 0.8rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .lightbox-close-btn:hover {
+    color: var(--fg);
+    border-color: var(--accent);
+    background: #111;
+  }
+
+  .lightbox-stage {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 0;
+    position: relative;
+  }
+
+  .lightbox-media-wrapper {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+  }
+
+  .lightbox-media-wrapper img {
+    max-width: 100%;
+    max-height: 72vh;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+  }
+
+  .lightbox-nav-btn {
+    background: transparent;
+    color: var(--fg-dim);
+    border: 1px solid var(--border);
+    font-size: 1.8rem;
+    line-height: 1;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.15s ease;
+  }
+
+  .lightbox-nav-btn:hover {
+    color: var(--fg);
+    border-color: var(--accent);
+    background: #111;
+  }
+
+  .lightbox-meta-bar {
+    border-top: 1px solid var(--border);
+    padding-top: 0.75rem;
+  }
+
+  @media (max-width: 768px) {
+    .lightbox-stage {
+      flex-direction: column;
+    }
+    .lightbox-nav-btn {
+      display: none;
+    }
+    .lightbox-media-wrapper img {
+      max-height: 60vh;
+    }
+  }
+</style>
+
+<script>
+  function setupLightbox() {
+    const dialog = document.getElementById('photo-lightbox') as HTMLDialogElement | null;
+    if (!dialog) return;
+
+    const cards = Array.from(document.querySelectorAll('.photo-card')) as HTMLElement[];
+    if (!cards.length) return;
+
+    const lightboxImg = document.getElementById('lightbox-img') as HTMLImageElement;
+    const lightboxTitle = document.getElementById('lightbox-title') as HTMLElement;
+    const lightboxSpecs = document.getElementById('lightbox-specs') as HTMLElement;
+    const lightboxCounter = document.getElementById('lightbox-counter') as HTMLElement;
+    const closeBtn = document.getElementById('lightbox-close-btn') as HTMLButtonElement;
+    const prevBtn = document.getElementById('lightbox-prev-btn') as HTMLButtonElement;
+    const nextBtn = document.getElementById('lightbox-next-btn') as HTMLButtonElement;
+
+    let currentIndex = 0;
+
+    function renderPhoto(index: number) {
+      if (index < 0) index = cards.length - 1;
+      if (index >= cards.length) index = 0;
+      currentIndex = index;
+
+      const card = cards[currentIndex];
+      const url = card.getAttribute('data-url') || '';
+      const title = card.getAttribute('data-title') || '';
+      const camera = card.getAttribute('data-camera') || '';
+      const lens = card.getAttribute('data-lens') || '';
+      const film = card.getAttribute('data-film') || '';
+      const iso = card.getAttribute('data-iso') || '';
+      const location = card.getAttribute('data-location') || '';
+      const date = card.getAttribute('data-date') || '';
+
+      lightboxImg.src = url;
+      lightboxImg.alt = title || 'Enlarged photo';
+      lightboxTitle.textContent = title;
+      lightboxCounter.textContent = `[ ${currentIndex + 1} / ${cards.length} ]`;
+
+      const specs = [camera, lens, film, iso, location, date].filter(Boolean);
+      lightboxSpecs.innerHTML = '';
+      specs.forEach((s) => {
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = s;
+        lightboxSpecs.appendChild(badge);
+      });
+    }
+
+    function openLightbox(index: number) {
+      renderPhoto(index);
+      if (typeof dialog.showModal === 'function') {
+        dialog.showModal();
+      } else {
+        dialog.setAttribute('open', '');
+      }
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      if (typeof dialog.close === 'function') {
+        dialog.close();
+      } else {
+        dialog.removeAttribute('open');
+      }
+      document.body.style.overflow = '';
+    }
+
+    cards.forEach((card, idx) => {
+      card.addEventListener('click', () => openLightbox(idx));
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openLightbox(idx);
+        }
+      });
+    });
+
+    closeBtn?.addEventListener('click', closeLightbox);
+    prevBtn?.addEventListener('click', () => renderPhoto(currentIndex - 1));
+    nextBtn?.addEventListener('click', () => renderPhoto(currentIndex + 1));
+
+    dialog.addEventListener('click', (e) => {
+      // Close on background click
+      if (e.target === dialog) {
+        closeLightbox();
+      }
+    });
+
+    dialog.addEventListener('cancel', () => {
+      document.body.style.overflow = '';
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (!dialog.open) return;
+      if (e.key === 'ArrowLeft') {
+        renderPhoto(currentIndex - 1);
+      } else if (e.key === 'ArrowRight') {
+        renderPhoto(currentIndex + 1);
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupLightbox);
+  } else {
+    setupLightbox();
+  }
+  document.addEventListener('astro:after-swap', setupLightbox);
+</script>
