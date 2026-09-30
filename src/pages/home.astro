@@ -108,13 +108,14 @@ function renderMarkdownLinks(text: string): string {
         )}
         <ul class="mono text-dim" style="list-style: none; display: flex; flex-direction: column; gap: 0.8rem; font-size: 0.9rem; padding: 0; margin: 0;">
           {endpoints.map((ep: any) => (
-            <li>
-              {ep.label && <span style="color: var(--fg); display: inline-block; width: 100px;">{ep.label}</span>}
+            <li class="endpoint-row">
+              {ep.label && <span class="endpoint-label">{ep.label}</span>}
               <a 
                 href={ep.url || ep.href} 
                 target={(ep.url || ep.href)?.startsWith('http') ? '_blank' : undefined} 
                 rel={(ep.url || ep.href)?.startsWith('http') ? 'noreferrer' : undefined}
                 style={ep.accent ? 'color: var(--accent);' : undefined}
+                class="endpoint-value"
               >
                 {ep.value || ep.url || ep.href}
               </a>
@@ -149,4 +150,23 @@ function renderMarkdownLinks(text: string): string {
   .home-prose :global(p:last-child) {
     margin-bottom: 0;
   }
+
+  .endpoint-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.75rem;
+  }
+
+  .endpoint-label {
+    color: var(--fg);
+    min-width: 90px;
+    flex-shrink: 0;
+  }
+
+  .endpoint-value {
+    word-break: break-all;
+    overflow-wrap: anywhere;
+  }
+</style>
 </style>

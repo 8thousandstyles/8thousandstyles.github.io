@@ -192,7 +192,7 @@ if (!isCategory && post) {
 
         <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem;">
           {post.frontmatter?.title && (
-            <h1 class="mono" style="font-size: 1.8rem; margin-bottom: 0.75rem;">
+            <h1 class="mono article-page-title" style="font-size: 1.8rem; margin-bottom: 0.75rem;">
               {post.frontmatter.title}
             </h1>
           )}
@@ -212,14 +212,36 @@ if (!isCategory && post) {
           )}
         </div>
 
+        {/* Mobile Accordion Table of Contents (Visible <= 1024px) */}
+        {headings && headings.length > 0 && (
+          <details class="mobile-toc-accordion mono card">
+            <summary class="mobile-toc-summary">
+              <span>[ Table of Contents ({headings.length}) ▾ ]</span>
+            </summary>
+            <nav class="mobile-toc-nav">
+              {headings.map((h: any) => {
+                const depthClass = h.depth === 3 ? 'toc-sub' : (h.depth === 4 ? 'toc-h4' : '');
+                return (
+                  <a 
+                    href={`#${h.slug}`} 
+                    class={`toc-link mono ${depthClass}`}
+                  >
+                    {h.text}
+                  </a>
+                );
+              })}
+            </nav>
+          </details>
+        )}
+
         <div class="blog-article-content text-dim">
           <post.Content />
         </div>
       </div>
 
-      <!-- Opened Right-Side Table of Contents -->
+      <!-- Opened Right-Side Table of Contents (Desktop only) -->
       {headings && headings.length > 0 && (
-        <aside class="article-toc">
+        <aside class="article-toc desktop-toc">
           <div class="toc-sticky">
             <span class="mono text-dim toc-header">Table of Contents</span>
             <nav class="toc-nav">
@@ -248,7 +270,7 @@ if (!isCategory && post) {
     const headings = Array.from(
       document.querySelectorAll('.blog-article-content h2, .blog-article-content h3, .blog-article-content h4')
     ) as HTMLElement[];
-    const tocLinks = Array.from(document.querySelectorAll('.toc-link')) as HTMLAnchorElement[];
+    const tocLinks = Array.from(document.querySelectorAll('.desktop-toc .toc-link')) as HTMLAnchorElement[];
 
     if (!headings.length || !tocLinks.length) return;
 

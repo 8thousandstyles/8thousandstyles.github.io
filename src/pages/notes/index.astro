@@ -120,7 +120,7 @@ const categories = Array.from(categoriesMap.entries()).map(([key, data]) => {
       <div class="flex" style="flex-direction: column; gap: 1.5rem; margin-bottom: 3rem;">
         {categories.map((cat) => (
           <a href={`/notes/${cat.key}`} class="card" style="text-decoration: none; display: block; transition: border-color 0.2s;">
-            <div class="flex" style="justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem;">
+            <div class="flex" style="justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
               <div class="flex" style="align-items: center; gap: 0.75rem;">
                 <h2 class="mono" style="font-size: 1.25rem; margin: 0; color: var(--fg);">
                   /{cat.key}

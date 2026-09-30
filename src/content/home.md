@@ -6,7 +6,7 @@ resume:
   label: "Resume →"
   path: "/resume"
 aboutTitle: "About Me & Systems Portfolio"
-endpointsTitle: "Authorized Endpoints"
+endpointsTitle: "Connect or Reach out"
 endpoints:
   - label: "EMAIL:"
     value: "8thousandstyles@gmail.com"

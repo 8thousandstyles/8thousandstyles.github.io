@@ -70,9 +70,28 @@ const linksItems = rawLinks
 const copyright = data.copyright;
 ---
 
-<nav class="sidebar">
+<!-- Mobile Top Header (Visible <= 860px) -->
+<header class="mobile-header">
+  <button 
+    id="mobile-brand-toggle" 
+    class="mobile-header-brand mono" 
+    type="button"
+    aria-label="Toggle navigation menu"
+    aria-expanded="false"
+    aria-controls="main-sidebar"
+  >
+    <span class="mobile-brand-prompt">&gt;</span>
+    <span class="mobile-brand-text">{title || "SYS_ARCHITECT"}</span>
+  </button>
+</header>
+
+<!-- Mobile Navigation Backdrop Overlay -->
+<div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+
+<!-- Main Navigation Drawer -->
+<nav id="main-sidebar" class="sidebar" aria-label="Main Navigation">
   {(title || taglineLines.length > 0) && (
-    <div>
+    <div class="sidebar-branding">
       {title && (
         <h2 class="mono" style="font-size: 1.2rem; margin-bottom: 0.5rem;">
           {title}
@@ -108,7 +127,7 @@ const copyright = data.copyright;
   {(showThemeToggle || linksItems.length > 0 || copyright) && (
     <div class="nav-section" style="margin-top: auto;">
       {showThemeToggle && (
-        <button id="theme-toggle-btn" class="theme-toggle-btn">
+        <button id="theme-toggle-btn" class="theme-toggle-btn" type="button">
           [ {themeToggleLabel} ]
         </button>
       )}
@@ -137,24 +156,84 @@ const copyright = data.copyright;
 </nav>
 
 <script>
-  function setupThemeToggle() {
-    const btn = document.getElementById('theme-toggle-btn');
-    if (!btn) return;
-    
-    function updateBtnText() {
-      const isLight = document.body.classList.contains('light-theme');
-      btn.textContent = `[ Toggle ${isLight ? 'Dark' : 'Light'} Mode ]`;
+  function setupNavigationAndTheme() {
+    const sidebar = document.getElementById('main-sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    const brandToggleBtn = document.getElementById('mobile-brand-toggle');
+    const desktopThemeBtn = document.getElementById('theme-toggle-btn');
+
+    // Drawer state controls
+    function openMenu() {
+      if (!sidebar) return;
+      sidebar.classList.add('open');
+      backdrop?.classList.add('active');
+      document.body.classList.add('mobile-nav-open');
+      if (brandToggleBtn) {
+        brandToggleBtn.setAttribute('aria-expanded', 'true');
+      }
     }
-    
-    updateBtnText();
-    
-    btn.addEventListener('click', () => {
-      const isLight = document.body.classList.toggle('light-theme');
-      localStorage.setItem('theme', isLight ? 'light' : 'dark');
-      updateBtnText();
+
+    function closeMenu() {
+      if (!sidebar) return;
+      sidebar.classList.remove('open');
+      backdrop?.classList.remove('active');
+      document.body.classList.remove('mobile-nav-open');
+      if (brandToggleBtn) {
+        brandToggleBtn.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    function toggleMenu() {
+      if (sidebar?.classList.contains('open')) {
+        closeMenu();
+      } else {
+        openMenu();
+      }
+    }
+
+    brandToggleBtn?.addEventListener('click', toggleMenu);
+    backdrop?.addEventListener('click', closeMenu);
+
+    // Auto-close on link click (allows smooth navigation)
+    const navLinks = sidebar?.querySelectorAll('.nav-link') || [];
+    navLinks.forEach((link) => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 860) {
+          closeMenu();
+        }
+      });
     });
+
+    // Close on Escape key
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sidebar?.classList.contains('open')) {
+        closeMenu();
+      }
+    });
+
+    // Theme toggling synchronization
+    function updateThemeUI() {
+      const isLight = document.body.classList.contains('light-theme');
+      if (desktopThemeBtn) {
+        desktopThemeBtn.textContent = `[ Toggle ${isLight ? 'Dark' : 'Light'} Mode ]`;
+      }
+    }
+
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light-theme');
+      if (isLight) {
+        document.documentElement.classList.add('light-theme');
+      } else {
+        document.documentElement.classList.remove('light-theme');
+      }
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
+      updateThemeUI();
+    }
+
+    desktopThemeBtn?.addEventListener('click', toggleTheme);
+    updateThemeUI();
   }
 
-  setupThemeToggle();
-  document.addEventListener('astro:after-swap', setupThemeToggle);
+  setupNavigationAndTheme();
+  document.addEventListener('astro:after-swap', setupNavigationAndTheme);
 </script>

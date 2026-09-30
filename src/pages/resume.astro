@@ -592,12 +592,49 @@ const schemaData = {
     }
 
     .resume-name {
-      font-size: 1.8rem;
+      font-size: clamp(1.4rem, 5.5vw, 1.8rem);
     }
 
     .resume-row {
       flex-direction: column;
       gap: 0.15rem;
+      align-items: flex-start;
+    }
+
+    .resume-top-bar {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 0.85rem !important;
+    }
+
+    .resume-contact-links {
+      font-size: 0.8rem;
+      line-height: 1.6;
+    }
+
+    .resume-entry-date,
+    .resume-entry-location {
+      text-align: left;
+    }
+  }
+
+  @media screen and (max-width: 480px) {
+    .resume-paper {
+      padding: 1rem 0.75rem;
+    }
+
+    .resume-bullets {
+      margin-left: 1rem;
+    }
+
+    .resume-section-title {
+      font-size: 0.95rem;
+      margin-top: 1.4rem;
+    }
+
+    .resume-skill-cat {
+      display: inline-block;
+      margin-bottom: 0.1rem;
     }
   }
 

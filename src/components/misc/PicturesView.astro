@@ -146,8 +146,8 @@ const photos: PhotoItem[] = Array.isArray(rawPhotos)
 <style>
   .pictures-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1.75rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: 1.5rem;
     margin-bottom: 2.5rem;
   }
 
@@ -357,14 +357,23 @@ const photos: PhotoItem[] = Array.isArray(rawPhotos)
   }
 
   @media (max-width: 768px) {
+    .photo-lightbox {
+      padding: 0.75rem;
+    }
     .lightbox-stage {
-      flex-direction: column;
+      flex-direction: row;
+      gap: 0.35rem;
     }
     .lightbox-nav-btn {
-      display: none;
+      width: 36px;
+      height: 36px;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+      padding: 0;
     }
     .lightbox-media-wrapper img {
       max-height: 60vh;
+      max-height: 60dvh;
     }
   }
 </style>
@@ -449,6 +458,23 @@ const photos: PhotoItem[] = Array.isArray(rawPhotos)
     closeBtn?.addEventListener('click', closeLightbox);
     prevBtn?.addEventListener('click', () => renderPhoto(currentIndex - 1));
     nextBtn?.addEventListener('click', () => renderPhoto(currentIndex + 1));
+
+    // Touch swipe support for mobile
+    let touchStartX = 0;
+    dialog.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    dialog.addEventListener('touchend', (e) => {
+      const diffX = e.changedTouches[0].screenX - touchStartX;
+      if (Math.abs(diffX) > 40) {
+        if (diffX < 0) {
+          renderPhoto(currentIndex + 1);
+        } else {
+          renderPhoto(currentIndex - 1);
+        }
+      }
+    }, { passive: true });
 
     dialog.addEventListener('click', (e) => {
       // Close on background click
