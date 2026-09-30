@@ -48,16 +48,5 @@ if (argInput && argOutput) {
     const inputPath = path.join(rawDir, file);
     const outputPath = path.join(outDir, `${base}.bin`);
     scrambleFile(inputPath, outputPath);
-
-    if (file === '1.webm') {
-      const fallbackPath = path.join(outDir, 'matrix_cache.bin');
-      scrambleFile(inputPath, fallbackPath);
-      defaultProcessed = true;
-    }
-  }
-
-  if (!defaultProcessed && files.length > 0) {
-    const first = path.join(rawDir, files[0]);
-    scrambleFile(first, path.join(outDir, 'matrix_cache.bin'));
   }
 }
