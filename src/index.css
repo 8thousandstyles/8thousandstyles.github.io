@@ -731,3 +731,74 @@ body.light-theme .project-content pre.astro-code {
     margin-bottom: 1.5rem;
   }
 }
+
+/* Print Optimizations */
+@media print {
+  @page {
+    size: letter portrait;
+    margin: 0.5in 0.6in;
+  }
+
+  /* Exclude sidebar, chrome, and interactive controls from print stream */
+  .sidebar,
+  .theme-toggle-btn,
+  .copy-code-btn,
+  .code-block-header {
+    display: none !important;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #111111 !important;
+    font-size: 10pt !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .app-container {
+    display: block !important;
+    min-height: auto !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .card {
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .badge {
+    border-color: #999999 !important;
+    color: #333333 !important;
+  }
+
+  .text-dim {
+    color: #333333 !important;
+  }
+
+  /* Prevent page breaks through individual entries */
+  .resume-section,
+  .resume-entry,
+  .resume-experience-item {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Stack multi-column elements linearly so ATS scrapers read in logical order */
+  .grid-2 {
+    display: block !important;
+  }
+
+  .grid-2 > div + div {
+    margin-top: 1.5rem !important;
+  }
+}
+

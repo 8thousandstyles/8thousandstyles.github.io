@@ -25,6 +25,7 @@ const resumePrefix = typeof resume === 'object'
 const resumeLabel = typeof resume === 'object' 
   ? (resume?.label ?? resume?.text) 
   : (frontmatter.resumeLabel || resumePath);
+const resumeTarget = typeof resume === 'object' ? resume?.target : undefined;
 
 const endpointsTitle = frontmatter.endpointsTitle;
 const rawEndpoints = frontmatter.endpoints;
@@ -85,6 +86,8 @@ function renderMarkdownLinks(text: string): string {
             {resumePrefix && <span>{resumePrefix}{resumePrefix.endsWith(' ') ? '' : ' '}</span>}
             <a 
               href={resumePath} 
+              target={resumeTarget ?? (resumePath.endsWith('.pdf') ? "_blank" : undefined)}
+              rel={resumeTarget === '_blank' || resumePath.endsWith('.pdf') ? "noopener noreferrer" : undefined}
               class="badge tag-link mono" 
               style="color: var(--fg); padding: 0.2rem 0.55rem; font-size: 0.8rem; margin-left: 0.25rem;"
             >
